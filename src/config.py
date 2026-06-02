@@ -61,3 +61,6 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str = ""
 
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+
+settings = Settings()  # type: ignore
