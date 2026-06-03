@@ -45,6 +45,13 @@ services:
       db:
         condition: service_healthy
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: always
+    ports:
+      - "1025:1025"   # SMTP — app gửi mail vào đây
+      - "8025:8025"   # Web UI để xem mail
+
 volumes:
   app-db-data:
   redis-data:
