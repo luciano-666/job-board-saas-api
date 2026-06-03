@@ -14,7 +14,11 @@ dependencies = [
 [tool.fastapi]
 entrypoint = "src.main:app"
 
+[tool.pytest.ini_options]
+anyio_mode = "auto"
+
 [dependency-groups]
 dev = [
+    "pytest>=9.0.3",
     "ruff>=0.15.15",
 ]
