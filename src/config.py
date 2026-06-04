@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import computed_field, PostgresDsn, EmailStr
 
@@ -6,7 +8,7 @@ import secrets
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file="../.env",
+        env_file=Path(__file__).parent.parent / ".env",
         env_ignore_empty=True,
         extra="ignore",
     )
