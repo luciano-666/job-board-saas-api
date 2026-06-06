@@ -1,150 +1,56 @@
-"""
-Abstract Unit of Work pattern - theo "Architecture Patterns with Python".
-Quản lý transaction và là nơi duy nhất để lấy repository.
-Có khả năng thu thập các domain events từ các aggregate đã seen.
-"""
-
-from abc import ABC, abstractmethod
-
-# from contextlib import asynccontextmanager
-from typing import TypeVar, List  # ,Generic, Optional
-
-from src.shared.repository import AbstractRepository  # ,T
-
-T_co = TypeVar("T_co", covariant=True)
+import abc
+from typing import Generator, Any
 
 
-class AbstractUnitOfWork(ABC):
+class AbstractUnitOfWork(abc.ABC):
     """
-    Đơn vị công việc trừu tượng.
-    Các lớp con cung cấp các repository attributes (ví dụ: uow.products, uow.batches)
-    và override _commit, _rollback, _close.
+    Abstract Base Class quản lý Atomicity (Transactions) dưới dạng Async Context Manager.
+    Kết nối chặt chẽ với Repository để tracking và dispatch Domain Events.
     """
 
-    def __init__(self):
-        # Các repository sẽ được gán trong subclass (ví dụ: self.products = SomeRepo())
-        pass
+    # Các module con sẽ định nghĩa các repositories cụ thể tại đây khi kế thừa.
+    # Ví dụ: users: AbstractUserRepository
 
-    async def __aenter__(self):
-        """Bắt đầu context, khởi tạo transaction."""
+    async def __aenter__(self) -> "AbstractUnitOfWork":
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Thoát context: rollback nếu có lỗi, commit nếu không."""
-        if exc_type is None:
-            await self.commit()
-        else:
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """
+        Tự động rollback nếu xảy ra exception (lỗi) trong block `async with uow`.
+        Nếu không có lỗi, lập trình viên phải chủ động gọi `await uow.commit()`.
+        """
+        if exc_type is not None:
             await self.rollback()
-        await self.close()
-
-    @abstractmethod
-    async def _commit(self) -> None:
-        """Thực hiện commit thực tế (override bởi subclass)."""
-        raise NotImplementedError
-
-    @abstractmethod
-    async def _rollback(self) -> None:
-        """Thực hiện rollback thực tế (override bởi subclass)."""
-        raise NotImplementedError
-
-    @abstractmethod
-    async def _close(self) -> None:
-        """Giải phóng tài nguyên (đóng session, ...)."""
-        raise NotImplementedError
-
-    # --- Public methods ---
+        else:
+            # Ngăn chặn việc quên commit, tuy nhiên trong DDD,
+            # việc tường minh gọi commit vẫn là best practice.
+            pass
 
     async def commit(self) -> None:
-        """Commit transaction và sau đó publish events từ các aggregate đã seen."""
+        """Thực hiện commit transaction xuống database."""
         await self._commit()
-        await self.publish_events()
 
-    async def rollback(self) -> None:
-        """Rollback transaction."""
-        await self._rollback()
-
-    async def close(self) -> None:
-        """Đóng kết nối / session."""
-        await self._close()
-
-    async def collect_new_events(self) -> List[object]:
+    def collect_events(self) -> Generator[Any, None, None]:
         """
-        Thu thập tất cả domain events từ các aggregate đã seen,
-        đồng thời xoá chúng khỏi aggregate để tránh publish lại.
-        Được gọi bởi message bus sau mỗi handler.
+        Thu thập toàn bộ các Domain Events từ các Entity đã tương tác qua các Repositories.
+        Hàm này sẽ được Message Bus gọi ngay sau khi commit thành công.
         """
-        events = []
-        # Duyệt qua tất cả repository hiện có trong UoW
-        for repo in self._get_all_repositories():
-            for aggregate in repo.seen:
-                while hasattr(aggregate, "events") and aggregate.events:
-                    events.append(aggregate.events.pop(0))
-        return events
-
-    async def publish_events(self) -> None:
-        """
-        Gửi events đến message bus ngay lập tức (thường dùng trong commit).
-        Nếu bạn muốn message bus xử lý events một cách đồng bộ, hãy gọi handle ở đây.
-        Tuy nhiên, theo sách, message bus sẽ tự gọi collect_new_events, nên publish_events
-        có thể để trống hoặc chỉ đánh dấu.
-        """
-        # Trong triển khai đơn giản, không làm gì cả.
-        # Message bus sẽ tự gọi collect_new_events.
-        pass
-
-    def _get_all_repositories(self) -> List[AbstractRepository]:
-        """Lấy tất cả repository attributes của UoW (dùng introspection)."""
-        repos = []
+        # Duyệt qua tất cả các repositories được định nghĩa trên UoW instance này
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
-            if isinstance(attr, AbstractRepository):
-                repos.append(attr)
-        return repos
+            # Kiểm tra nếu thuộc tính đó là một Repository có chứa tập hợp `seen`
+            if hasattr(attr, "seen"):
+                for entity in attr.seen:
+                    if hasattr(entity, "events"):
+                        while entity.events:
+                            yield entity.events.pop(0)
 
-
-# =============================================================================
-# Fake Unit of Work dành cho unit test
-# =============================================================================
-
-
-class FakeUnitOfWork(AbstractUnitOfWork):
-    """
-    UoW giả dùng in-memory, không có database thật.
-    Có thể gán các fake repository vào các attribute.
-    """
-
-    def __init__(self, **repositories):
-        super().__init__()
-        for name, repo in repositories.items():
-            setattr(self, name, repo)
-        self.committed = False
-        self.rolled_back = False
-        self.closed = False
-
+    @abc.abstractmethod
     async def _commit(self) -> None:
-        self.committed = True
+        """Hiện thực hóa logic commit bất đồng bộ của DB Driver."""
+        raise NotImplementedError
 
-    async def _rollback(self) -> None:
-        self.rolled_back = True
-
-    async def _close(self) -> None:
-        self.closed = True
-
-    # Hỗ trợ truy cập repository qua tên (nếu chưa có attribute)
-    def __getattr__(self, name):
-        # Nếu không tìm thấy attribute, trả về None (hoặc có thể raise)
-        return None
-
-
-# =============================================================================
-# Factory function để tạo nhanh FakeUnitOfWork với các fake repository
-# =============================================================================
-
-
-def create_fake_uow(repo_mapping: dict[str, AbstractRepository]) -> FakeUnitOfWork:
-    """
-    Tạo FakeUnitOfWork và gán các repository đã cho.
-    Ví dụ:
-        uow = create_fake_uow({"products": FakeProductRepository(), "jobs": FakeJobRepository()})
-    """
-    return FakeUnitOfWork(**repo_mapping)
+    @abc.abstractmethod
+    async def rollback(self) -> None:
+        """Hiện thực hóa logic rollback khi có lỗi xảy ra."""
+        raise NotImplementedError
