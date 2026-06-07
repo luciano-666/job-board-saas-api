@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [tool.fastapi]
-entrypoint = "src.main:app"
+entrypoint = "src.entrypoints.api.main:app"
 
 [tool.pytest.ini_options]
 anyio_mode = "auto"
