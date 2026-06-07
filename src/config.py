@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     )
     API_V1_STR: str = "/api/v1"
     FRONTEND_HOST: str = "http://localhost:5173"
-    ENVIRONMENT = "local"  # local | staging | production
+    ENVIRONMENT: str = "local"  # local | staging | production
 
     PROJECT_NAME: str
 
