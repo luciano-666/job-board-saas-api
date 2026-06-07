@@ -1,17 +1,20 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import computed_field, PostgresDsn, EmailStr
+from pydantic import computed_field, PostgresDsn, EmailStr, AnyUrl
 
 import secrets
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file="../.env",
+        env_file=Path(__file__).parent.parent / ".env",
         env_ignore_empty=True,
         extra="ignore",
     )
     API_V1_STR: str = "/api/v1"
     FRONTEND_HOST: str = "http://localhost:5173"
+    ENVIRONMENT = "local"  # local | staging | production
 
     PROJECT_NAME: str
 
@@ -48,7 +51,7 @@ class Settings(BaseSettings):
     EMAILS_FROM_EMAIL: EmailStr | None = None
     EMAILS_FROM_NAME: str | None = None
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def emails_enabled(self) -> bool:
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
@@ -61,6 +64,9 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str = ""
 
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+    # Sentry — optional, no-op when unset (local dev)
+    SENTRY_DSN: AnyUrl | None = None
 
 
 settings = Settings()  # type: ignore

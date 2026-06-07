@@ -10,8 +10,6 @@ services:
       timeout: 10s
     volumes:
       - app-db-data:/var/lib/postgresql/data/pgdata
-    env_file:
-      - .env
     environment:
       - PGDATA=/var/lib/postgresql/data/pgdata
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
@@ -45,12 +43,21 @@ services:
       db:
         condition: service_healthy
 
-  mailhog:
-    image: mailhog/mailhog:latest
-    restart: always
-    ports:
-      - "1025:1025"   # SMTP — app gửi mail vào đây
-      - "8025:8025"   # Web UI để xem mail
+ # Mailtrap SMTP sandbox — replace MailHog.
+  # Requires MAILTRAP_USER and MAILTRAP_PASSWORD from your Mailtrap inbox credentials.
+  # Alternatively, point SMTP_HOST/PORT directly at sandbox.smtp.mailtrap.io in .env
+  # and skip this service entirely (Mailtrap is cloud-hosted, no local container needed).
+  #
+  # If you still want a local catch-all for offline dev, use `axllent/mailpit` instead:
+  #   image: axllent/mailpit
+  #   ports: ["1025:1025", "8025:8025"]
+  #
+  # mailpit:
+  #   image: axllent/mailpit
+  #   restart: always
+  #   ports:
+  #     - "1025:1025"   # SMTP
+  #     - "8025:8025"   # Web UI
 
 volumes:
   app-db-data:

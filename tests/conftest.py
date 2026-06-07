@@ -6,10 +6,10 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from src.main import app
+from src.entrypoints.api.main import app
 
 # from src.database import init_db
-from src.dependencies import get_db
+from src.entrypoints.api.dependencies import get_db
 from src.models import Base
 from src.config import settings
 
