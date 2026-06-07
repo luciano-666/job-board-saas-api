@@ -103,7 +103,7 @@ def test_suspended_user_cannot_verify_password():
     )
     suspended_user.is_activated = False  # Giả lập trạng thái đã bị khóa
 
-    with pytest.raises(PermissionError, match="This account is suspended!"):
+    with pytest.raises(PermissionError, match="This account has been suspended"):
         suspended_user.verify_password(
             "password123", verifier_fn=fake_password_verifier
         )
@@ -161,7 +161,7 @@ def test_cannot_register_with_invalid_email_or_weak_password():
     """
     Ràng buộc bất biến: Domain từ chối khởi tạo nếu dữ liệu vi phạm định dạng cơ bản.
     """
-    with pytest.raises(ValueError, match="Email không hợp lệ"):
+    with pytest.raises(ValueError, match="Invalid email address"):
         User.register(
             email="invalid-email-format",
             plain_password="validPassword123",
@@ -169,7 +169,7 @@ def test_cannot_register_with_invalid_email_or_weak_password():
             password_hasher=fake_password_hash,
         )
 
-    with pytest.raises(ValueError, match="Mật khẩu quá ngắn"):
+    with pytest.raises(ValueError, match="Password is too short"):
         User.register(
             email="valid@example.com",
             plain_password="123",  # Quá ngắn
@@ -251,7 +251,7 @@ def test_suspended_user_cannot_change_password():
     )
     suspended_user.is_activated = False
 
-    with pytest.raises(PermissionError, match="This account is suspended!"):
+    with pytest.raises(PermissionError, match="This account has been suspended"):
         suspended_user.change_password(
             plain_new_password="new_password123",
             password_hasher=fake_password_hash,
