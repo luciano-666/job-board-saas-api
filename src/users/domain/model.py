@@ -1,5 +1,5 @@
-# src/users/domain/model.py
 import re
+from uuid import UUID, uuid4
 from enum import Enum
 from typing import List, Callable
 
@@ -30,11 +30,13 @@ class UserRole(str, Enum):
 class User:
     def __init__(
         self,
+        id: UUID,
         email: str,
         hashed_password: str,
         role: UserRole,
         is_activated: bool = True,
     ):
+        self.id = id
         self.email = email
         self.hashed_password = hashed_password
         self.role = role
@@ -77,6 +79,7 @@ class User:
         is_activated = role != UserRole.employer
 
         user = cls(
+            id=uuid4(),
             email=email,
             hashed_password=hashed_password,
             role=role,
