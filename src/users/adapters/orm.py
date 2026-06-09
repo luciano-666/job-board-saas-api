@@ -19,5 +19,4 @@ users_table = Table(
 )
 
 
-def start_mappers():
-    mapper_registry.map_imperatively(User, users_table)
+mapper_registry.map_imperatively(User, users_table)
