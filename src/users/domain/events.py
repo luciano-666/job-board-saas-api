@@ -1,4 +1,3 @@
-# src/users/domain/events.py
 from dataclasses import dataclass
 
 

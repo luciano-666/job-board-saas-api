@@ -1,4 +1,5 @@
 import pytest
+import uuid
 
 from src.users.domain.model import User, UserRole
 from src.users.domain import events
@@ -35,6 +36,7 @@ def test_user_password_verification():
     thông qua hàm verifier được inject từ Service Layer.
     """
     user = User(
+        id=uuid.uuid4(),
         email="user@example.com",
         hashed_password=fake_password_hash("user123"),
         role=UserRole.candidate,
@@ -54,11 +56,13 @@ def test_admin_user_can_suspend_normal_user():
     Khi khóa thành công, trạng thái kích hoạt về False và phát ra sự kiện UserSuspended.
     """
     candidate = User(
+        id=uuid.uuid4(),
         email="candidate@example.com",
         hashed_password=fake_password_hash("candidate123"),
         role=UserRole.candidate,
     )
     admin = User(
+        id=uuid.uuid4(),
         email="admin@example.com",
         hashed_password=fake_password_hash("admin123"),
         role=UserRole.admin,
@@ -81,10 +85,16 @@ def test_non_admin_cannot_suspend_users():
     Ràng buộc bất biến (Invariant): Người dùng thông thường không thể tự ý khóa tài khoản khác.
     """
     candidate_1 = User(
-        email="c1@example.com", hashed_password="...", role=UserRole.candidate
+        id=uuid.uuid4(),
+        email="c1@example.com",
+        hashed_password="...",
+        role=UserRole.candidate,
     )
     candidate_2 = User(
-        email="c2@example.com", hashed_password="...", role=UserRole.candidate
+        id=uuid.uuid4(),
+        email="c2@example.com",
+        hashed_password="...",
+        role=UserRole.candidate,
     )
 
     with pytest.raises(PermissionError, match="Only admin can suspend users"):
@@ -97,6 +107,7 @@ def test_suspended_user_cannot_verify_password():
     thì không được phép kiểm tra mật khẩu (chặn đăng nhập ngay từ core).
     """
     suspended_user = User(
+        id=uuid.uuid4(),
         email="locked@example.com",
         hashed_password=fake_password_hash("password123"),
         role=UserRole.candidate,
@@ -125,7 +136,12 @@ def test_employer_registration_requires_admin_approval():
     # Giả sử theo thiết kế của bạn: Employer mới tạo sẽ chưa được kích hoạt ngay
     assert employer.is_activated is False
 
-    admin = User(email="admin@example.com", hashed_password="...", role=UserRole.admin)
+    admin = User(
+        id=uuid.uuid4(),
+        email="admin@example.com",
+        hashed_password="...",
+        role=UserRole.admin,
+    )
 
     # Hành vi Admin duyệt tài khoản doanh nghiệp
     admin.approve(target_user=employer)
@@ -140,6 +156,7 @@ def test_user_can_change_password_and_triggers_event():
     và phát sinh sự kiện PasswordChanged để hệ thống xóa JWT cũ trên Redis.
     """
     user = User(
+        id=uuid.uuid4(),
         email="user@example.com",
         hashed_password=fake_password_hash("old_password"),
         role=UserRole.candidate,
@@ -200,6 +217,7 @@ def test_employer_registration_starts_as_pending():
 
     # Sau khi Admin approve mới chuyển sang ACTIVE và phát UserApproved
     admin = User(
+        id=uuid.uuid4(),
         email="admin@example.com",
         hashed_password=fake_password_hash("admin123"),
         role=UserRole.admin,
@@ -216,16 +234,19 @@ def test_non_admin_cannot_approve_users():
     phê duyệt tài khoản Employer. Mọi role khác đều bị từ chối.
     """
     employer = User(
+        id=uuid.uuid4(),
         email="company@example.com",
         hashed_password=fake_password_hash("employer123"),
         role=UserRole.employer,
     )
     another_employer = User(
+        id=uuid.uuid4(),
         email="other@example.com",
         hashed_password=fake_password_hash("other123"),
         role=UserRole.employer,
     )
     candidate = User(
+        id=uuid.uuid4(),
         email="candidate@example.com",
         hashed_password=fake_password_hash("candidate123"),
         role=UserRole.candidate,
@@ -245,6 +266,7 @@ def test_suspended_user_cannot_change_password():
     Đảm bảo kẻ xấu không thể chiếm lại tài khoản sau khi bị Admin khóa.
     """
     suspended_user = User(
+        id=uuid.uuid4(),
         email="locked@example.com",
         hashed_password=fake_password_hash("password123"),
         role=UserRole.candidate,
