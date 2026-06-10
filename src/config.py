@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
+    TEST_DB: str = "test_db"
 
     @computed_field
     @property
@@ -34,6 +35,18 @@ class Settings(BaseSettings):
             host=self.POSTGRES_SERVER,
             port=self.POSTGRES_PORT,
             path=self.POSTGRES_DB,
+        )
+
+    @computed_field
+    @property
+    def TEST_DATABASE_URI(self) -> PostgresDsn:
+        return PostgresDsn.build(
+            scheme="postgresql+psycopg",
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_SERVER,
+            port=self.POSTGRES_PORT,
+            path=self.TEST_DB,
         )
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"
