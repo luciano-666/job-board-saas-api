@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from src.config import settings
-from src.models import Base
-
+from src.shared.adapters.models import Base
+from src.users.adapters.orm import UserORM  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -1,21 +1,17 @@
-# from collections.abc import AsyncGenerator
-# from unittest.mock import AsyncMock, patch
-
 import pytest
-# from httpx import ASGITransport, AsyncClient
-# from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-# from sqlalchemy.pool import NullPool
+from collections.abc import AsyncGenerator
 
-# from src.entrypoints.api.main import app
+from httpx import ASGITransport, AsyncClient
 
-# from src.database import init_db
-# from src.entrypoints.api.dependencies import get_db
-# from src.models import Base
-# from src.config import settings
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 
-# from tests.utils.user import authentication_token_from_email
-# from tests.utils.utils import get_superuser_token_headers
+from src.config import settings
+from src.entrypoints.api.main import app
+from src.shared.adapters.models import Base
+from src.entrypoints.api.dependencies import get_db
+
 
 pytest_plugins = ["anyio"]
 
@@ -62,31 +58,19 @@ def anyio_backend():
 #         join_transaction_mode="create_savepoint",
 #     )
 
-#     async with test_async_session() as session:
-#         # await init_db(session=session)
-#         try:
-#             yield session
-#         finally:
-#             await session.close()
-#             await trans.rollback()  # tự động rollback — không cần cleanup thủ công
-#             await conn.close()
+    async with test_async_session() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+            await trans.rollback()  # tự động rollback — không cần cleanup thủ công
+            await conn.close()
 
 
-# @pytest.fixture
-# def mock_redis():
-#     """Mock Redis để tránh dependency vào Redis server trong unit test."""
-#     with patch("src.dependencies.get_redis") as mock_get_redis:
-#         redis_mock = AsyncMock()
-#         redis_mock.get.return_value = None
-#         redis_mock.setex.return_value = True
-#         mock_get_redis.reredis_mockturn_value = redis_mock
-#         yield
-
-
-# @pytest.fixture
-# async def client(db: AsyncSession, mock_redis) -> AsyncGenerator[AsyncClient, None]:
-#     async def override_get_db():
-#         yield db
+@pytest.fixture
+async def client(db: AsyncSession, mock_redis) -> AsyncGenerator[AsyncClient, None]:
+    async def override_get_db():
+        yield db
 
 #     app.dependency_overrides[get_db] = override_get_db
 
@@ -96,18 +80,4 @@ def anyio_backend():
 #     ) as ac:
 #         yield ac
 
-#     app.dependency_overrides.clear()
-
-
-# @pytest.fixture
-# async def superuser_token_headers(client: AsyncClient) -> dict[str, str]:
-#     return await get_superuser_token_headers(client)
-
-
-# @pytest.fixture
-# async def normal_user_token_headers(
-#     client: AsyncClient, db: AsyncSession
-# ) -> dict[str, str]:
-#     return await authentication_token_from_email(
-#         client=client, email=settings.EMAIL_TEST_USER, db=db
-#     )
+    app.dependency_overrides.clear()
