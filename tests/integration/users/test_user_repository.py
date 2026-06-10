@@ -3,6 +3,9 @@ from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.users.domain.model import User, UserRole
+from src.users.adapters.repository import SqlAlchemyUserRepository
+
+pytestmark = pytest.mark.anyio
 
 
 def make_user(
@@ -13,33 +16,56 @@ def make_user(
         email=email,
         hashed_password="hashed-password",
         role=UserRole.candidate,
-        is_activated=True,
+        is_active=True,
     )
 
 
 async def test_add_user(db: AsyncSession):
-    pytest.fail("todo")
+    user = make_user(email="candidate@example.com")
+    user_repo = SqlAlchemyUserRepository(db)
+    user_repo.add(user)
+    await db.flush()
+
+    fetched_user = await user_repo.get(user.id)
+    assert fetched_user is not None
+    assert fetched_user.id == user.id
+    assert fetched_user.email == "candidate@example.com"
+
+
+async def test_get_user_by_id(db: AsyncSession):
+    repo = SqlAlchemyUserRepository(db)
+    user = make_user()
+
+    repo.add(user)
+    await db.flush()
+
+    fetched = await repo.get(user.id)
+    assert fetched is not None
+    assert fetched.id == user.id
+    assert fetched.email == user.email
+
+
+async def test_get_user_by_id_not_found(db: AsyncSession):
+    repo = SqlAlchemyUserRepository(db)
+
+    result = await repo.get(uuid4())
+
+    assert result is None
 
 
 async def test_get_user_by_email(db: AsyncSession):
-    pytest.fail("todo")
+    repo = SqlAlchemyUserRepository(db)
+    user = make_user(email="target@example.com")
+
+    repo.add(user)
+    await db.flush()
+
+    fetched = await repo.get_by_email("target@example.com")
+    assert fetched is not None
+    assert fetched.email == "target@example.com"
 
 
-async def test_returns_none_when_email_not_found(db: AsyncSession):
-    pytest.fail("todo")
-
-
-async def test_repository_tracks_added_entity_in_seen(db: AsyncSession):
-    pytest.fail("todo")
-
-
-async def test_repository_tracks_loaded_entity_in_seen(db: AsyncSession):
-    pytest.fail("todo")
-
-
-async def test_loaded_user_contains_persisted_role(db: AsyncSession):
-    pytest.fail("todo")
-
-
-async def test_loaded_user_contains_activation_status(db: AsyncSession):
-    pytest.fail("todo")
+async def test_get_user_by_email_not_found(db: AsyncSession):
+    repo = SqlAlchemyUserRepository(db)
+    result = await repo.get_by_email("ghost@example.com")
+    assert result is None

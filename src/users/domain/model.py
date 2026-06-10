@@ -1,7 +1,9 @@
 import re
 from uuid import UUID, uuid4
 from enum import Enum
-from typing import List, Callable
+from typing import Callable
+from datetime import datetime, UTC
+from dataclasses import dataclass, field
 
 from src.users.domain.events import (
     DomainEvent,
@@ -27,21 +29,17 @@ class UserRole(str, Enum):
     candidate = "candidate"
 
 
+@dataclass
 class User:
-    def __init__(
-        self,
-        id: UUID,
-        email: str,
-        hashed_password: str,
-        role: UserRole,
-        is_activated: bool = True,
-    ):
-        self.id = id
-        self.email = email
-        self.hashed_password = hashed_password
-        self.role = role
-        self.is_activated = is_activated
-        self.events: List[DomainEvent] = []
+    email: str
+    hashed_password: str
+    role: UserRole
+    id: UUID = field(default_factory=uuid4)
+    full_name: str | None = None
+    is_active: bool = True
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    events: list[DomainEvent] = field(default_factory=list, compare=False)
 
     @property
     def is_superuser(self) -> bool:
@@ -49,7 +47,7 @@ class User:
 
     def _guard_suspended(self) -> None:
         """Raise if the account is suspended before allowing any interaction."""
-        if not self.is_activated:
+        if not self.is_active:
             raise AccountSuspendedError(email=self.email)
 
     def _guard_admin(self, action: str) -> None:
@@ -64,7 +62,7 @@ class User:
         plain_password: str,
         role: UserRole,
         password_hasher: Callable[[str], str],
-    ) -> "User":
+    ) -> User:
         """Factory method — create and return a new User, emitting UserRegistered.
 
         Employers start as inactive (PENDING) and require admin approval.
@@ -76,14 +74,14 @@ class User:
             raise WeakPasswordError()
 
         hashed_password = password_hasher(plain_password)
-        is_activated = role != UserRole.employer
+        is_active = role != UserRole.employer
 
         user = cls(
             id=uuid4(),
             email=email,
             hashed_password=hashed_password,
             role=role,
-            is_activated=is_activated,
+            is_active=is_active,
         )
         user.events.append(UserRegistered(email=email, role=role.value))
         return user
@@ -113,7 +111,7 @@ class User:
     def suspend(self, target_user: "User") -> None:
         """Admin action — deactivate a user account and emit UserSuspended."""
         self._guard_admin("suspend users")
-        target_user.is_activated = False
+        target_user.is_active = False
         target_user.events.append(
             UserSuspended(email=target_user.email, role=target_user.role.value)
         )
@@ -121,7 +119,7 @@ class User:
     def approve(self, target_user: "User") -> None:
         """Admin action — activate a pending employer account and emit UserApproved."""
         self._guard_admin("approve users")
-        target_user.is_activated = True
+        target_user.is_active = True
         target_user.events.append(
             UserApproved(email=target_user.email, role=target_user.role.value)
         )

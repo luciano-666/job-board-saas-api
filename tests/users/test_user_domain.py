@@ -22,7 +22,7 @@ def test_user_registration():
     )
 
     assert user.hashed_password == "bcrypt_candidate123"
-    assert user.is_activated is True
+    assert user.is_active is True
 
     # Kiểm tra Domain Event được ghi nhận để phục vụ gửi email chào mừng sau này
     assert len(user.events) == 1
@@ -72,7 +72,7 @@ def test_admin_user_can_suspend_normal_user():
     admin.suspend(target_user=candidate)
 
     assert admin.is_superuser is True
-    assert candidate.is_activated is False
+    assert candidate.is_active is False
 
     # Kiểm tra Domain Event để kích hoạt ngầm hạ toàn bộ bài đăng (nếu là Employer)
     assert len(candidate.events) == 1
@@ -112,7 +112,7 @@ def test_suspended_user_cannot_verify_password():
         hashed_password=fake_password_hash("password123"),
         role=UserRole.candidate,
     )
-    suspended_user.is_activated = False  # Giả lập trạng thái đã bị khóa
+    suspended_user.is_active = False  # Giả lập trạng thái đã bị khóa
 
     with pytest.raises(PermissionError, match="This account has been suspended"):
         suspended_user.verify_password(
@@ -134,7 +134,7 @@ def test_employer_registration_requires_admin_approval():
     )
 
     # Giả sử theo thiết kế của bạn: Employer mới tạo sẽ chưa được kích hoạt ngay
-    assert employer.is_activated is False
+    assert employer.is_active is False
 
     admin = User(
         id=uuid.uuid4(),
@@ -146,7 +146,7 @@ def test_employer_registration_requires_admin_approval():
     # Hành vi Admin duyệt tài khoản doanh nghiệp
     admin.approve(target_user=employer)
 
-    assert employer.is_activated is True
+    assert employer.is_active is True
     assert any(isinstance(e, events.UserApproved) for e in employer.events)
 
 
@@ -208,7 +208,7 @@ def test_employer_registration_starts_as_pending():
         password_hasher=fake_password_hash,
     )
 
-    assert employer.is_activated is False
+    assert employer.is_active is False
 
     # Event phát ra vẫn là UserRegistered, không phải UserApproved
     assert len(employer.events) == 1
@@ -224,7 +224,7 @@ def test_employer_registration_starts_as_pending():
     )
     admin.approve(target_user=employer)
 
-    assert employer.is_activated is True
+    assert employer.is_active is True
     assert any(isinstance(e, events.UserApproved) for e in employer.events)
 
 
@@ -271,7 +271,7 @@ def test_suspended_user_cannot_change_password():
         hashed_password=fake_password_hash("password123"),
         role=UserRole.candidate,
     )
-    suspended_user.is_activated = False
+    suspended_user.is_active = False
 
     with pytest.raises(PermissionError, match="This account has been suspended"):
         suspended_user.change_password(
