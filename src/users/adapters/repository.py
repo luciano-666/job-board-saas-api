@@ -53,8 +53,6 @@ class SqlAlchemyUserRepository:
             role=user.role,
             hashed_password=user.hashed_password,
             is_active=user.is_active,
-            created_at=user.created_at,
-            updated_at=user.updated_at,
         )
 
     @staticmethod
@@ -67,6 +65,4 @@ class SqlAlchemyUserRepository:
             id=record.id,
             full_name=record.full_name,
             is_active=record.is_active,
-            created_at=record.created_at,
-            updated_at=record.updated_at,
         )

@@ -2,7 +2,7 @@ import re
 from uuid import UUID, uuid4
 from enum import Enum
 from typing import Callable
-from datetime import datetime, UTC
+
 from dataclasses import dataclass, field
 
 from src.users.domain.events import (
@@ -37,8 +37,6 @@ class User:
     id: UUID = field(default_factory=uuid4)
     full_name: str | None = None
     is_active: bool = True
-    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     events: list[DomainEvent] = field(default_factory=list, compare=False)
 
     @property
