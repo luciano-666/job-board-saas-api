@@ -1,0 +1,18 @@
+class UserDomainError(Exception):
+    """Base exception for the users bounded context."""
+
+
+class AccountSuspendedError(UserDomainError, PermissionError):
+    """Account has been suspended — all interactions are blocked."""
+
+    def __init__(self, email: str | None = None) -> None:
+        self.email = email
+        super().__init__(f"This account {email} has been suspended")
+
+
+class InsufficientPermissionError(UserDomainError, PermissionError):
+    """The actor does not have permission to perform this action."""
+
+    def __init__(self, action: str) -> None:
+        self.action = action
+        super().__init__(f"Only admin can {action}")

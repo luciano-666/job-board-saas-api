@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     EMAILS_FROM_EMAIL: EmailStr | None = None
     EMAILS_FROM_NAME: str | None = None
 
+    # SECURITY SETTINGS
+    SECURITY_EMAIL_ALLOWED_DOMAINS: list[str]
+
     @computed_field
     @property
     def emails_enabled(self) -> bool:
