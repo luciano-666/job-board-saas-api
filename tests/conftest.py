@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import NullPool
 
 
-from src.config import settings
-from src.entrypoints.api.main import app
+from src.core.config import settings
+from src.main import app
 from src.shared.adapters.models import Base
-from src.entrypoints.api.dependencies import get_db
+from src.core.dependencies import get_db
 
 
 pytest_plugins = ["anyio"]

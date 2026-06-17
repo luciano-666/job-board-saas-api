@@ -9,9 +9,9 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from sentry_sdk.types import Event, Hint
 
-from src.logging_config import configure_logging
-from src.middleware.logging import RequestLoggingMiddleware
-from src.config import settings
+from src.core.logging_config import configure_logging
+from src.core.middleware.logging import RequestLoggingMiddleware
+from src.core.config import settings
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:

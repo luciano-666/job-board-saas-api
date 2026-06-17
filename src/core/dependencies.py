@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from src.database import AsyncSessionLocal, AsyncSession
+from src.core.database import AsyncSessionLocal, AsyncSession
 
 
 async def get_db():
