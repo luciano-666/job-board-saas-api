@@ -8,7 +8,8 @@ from src.core.config import settings
 from src.modules.shared.application.enums import Role
 from src.modules.shared.infrastructure.models import BaseModel
 from src.modules.user.application.enums import Gender
-from src.modules.user.domain.value_objects import Phone, Email
+from src.modules.user.domain.value_objects import Phone, Email, Name
+from src.modules.user.domain.entities import User
 
 if TYPE_CHECKING:
     from src.modules.authentication.infrastructure.models import SessionModel
@@ -99,3 +100,40 @@ class UserModel(BaseModel):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
+    @classmethod
+    def from_entity(cls, user: User) -> "UserModel":
+        return cls(
+            id=user.id,
+            first_name=user.name.first_name,
+            last_name=user.name.last_name,
+            preferred_name=user.name.preferred_name,
+            gender=user.gender,
+            birthdate=user.birthdate,
+            email=str(user.email),
+            phone=str(user.phone) if user.phone else None,
+            hashed_password=user.hashed_password,
+            role=user.role,
+            is_active=user.is_active,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+        )
+
+    def to_entity(self) -> User:
+        return User(
+            id=self.id,
+            name=Name(
+                first_name=self.first_name,
+                last_name=self.last_name,
+                preferred_name=self.preferred_name,
+            ),
+            gender=self.gender,
+            birthdate=self.birthdate,
+            email=Email(self.email.__str__()),
+            phone=Phone(self.phone.__str__()) if self.phone else None,
+            hashed_password=self.hashed_password,
+            role=self.role,
+            is_active=self.is_active,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+        )

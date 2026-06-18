@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import computed_field, PostgresDsn, EmailStr, AnyUrl
+from pydantic import computed_field, PostgresDsn, EmailStr, AnyUrl, AnyHttpUrl
 
 import secrets
 
@@ -66,8 +66,15 @@ class Settings(BaseSettings):
     EMAILS_FROM_EMAIL: EmailStr | None = None
     EMAILS_FROM_NAME: str | None = None
 
-    # SECURITY SETTINGS
-    SECURITY_EMAIL_ALLOWED_DOMAINS: list[str]
+    # COOKIES
+    COOKIES_MAX_AGE_SECONDS: int
+    COOKIES_TOKEN_TYPE_KEY: str
+    COOKIES_ACCESS_TOKEN_KEY: str
+    COOKIES_ACCESS_TOKEN_PATH: str
+    COOKIES_REFRESH_TOKEN_KEY: str
+    COOKIES_REFRESH_TOKEN_PATH: str
+    COOKIES_DEVICE_KEY: str
+    COOKIES_DOMAIN: str
 
     @computed_field
     @property
@@ -87,8 +94,19 @@ class Settings(BaseSettings):
     SENTRY_DSN: AnyUrl | None = None
 
     # APPLICATION
-    APPLICATION_TABLE_PREFIX: str
+    APPLICATION_TITLE: str
+    APPLICATION_SUMMARY: str
+    APPLICATION_DESCRIPTION: str
+    APPLICATION_VERSION: str
+    APPLICATION_CONTACT_NAME: str
+    APPLICATION_CONTACT_URL: str
+    APPLICATION_CONTACT_EMAIL: str
+    APPLICATION_CONTACT_PHONE: str
     APPLICATION_ENVIRONMENT: str
+    APPLICATION_PORT: int
+    APPLICATION_CONNECT_TIMEOUT_SECONDS: int
+    APPLICATION_URL: AnyHttpUrl
+    APPLICATION_TABLE_PREFIX: str
 
     # APPLICATION
     @computed_field
@@ -98,6 +116,117 @@ class Settings(BaseSettings):
             return False
         else:
             return True
+
+    # JWT
+    JWT_ISSUER: str
+    JWT_AUDIENCE: str
+    JWT_SIGNING_KEY_PASSWORD: str
+    JWT_ENCRYPTION_KEY_PASSWORD: str
+    JWT_SIGNING_PRIVATE_KEY_PATH: str
+    JWT_SIGNING_PUBLIC_KEY_PATH: str
+    JWT_ENCRYPTION_PRIVATE_KEY_PATH: str
+    JWT_ENCRYPTION_PUBLIC_KEY_PATH: str
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int
+    JWT_HASH_FINGERPRINT: str
+
+    # AUTH
+    AUTH_BEARER_TOKEN_SCHEME_NAME: str
+    AUTH_BEARER_TOKEN_SCHEME_DESCRIPTION: str
+    AUTH_API_KEY_SCHEME_NAME: str
+    AUTH_API_KEY_SCHEME_DESCRIPTION: str
+    AUTH_API_KEY_HEADER: str
+    AUTH_API_KEY_HEADER_DESCRIPTION: str
+
+    # SECURITY SETTINGS
+    SECURITY_ALLOW_ORIGINS: list[str]
+    SECURITY_ALLOW_HEADERS: list[str]
+    SECURITY_ALLOW_METHODS: list[str]
+    SECURITY_EMAIL_ALLOWED_DOMAINS: list[str]
+    SECURITY_ADMIN_EMAIL: str
+    SECURITY_ADMIN_PASSWORD: str
+
+    # SECURITY
+    @computed_field
+    @property
+    def SECURITY_NO_AUTH_PATHS(self) -> list[dict[str, str]]:  # noqa
+        return [
+            # AUTHENTICATION
+            {"endpoint": "/api/v1/authentication/login/", "method": "POST"},
+            {"endpoint": "/api/v1/authentication/login", "method": "POST"},
+            {"endpoint": "/api/v1/authentication/logout/", "method": "DELETE"},
+            {"endpoint": "/api/v1/authentication/logout", "method": "DELETE"},
+            # EXAMPLE
+            {"endpoint": "/api/v1/example/", "method": "POST"},
+            {"endpoint": "/api/v1/example", "method": "POST"},
+            # HEALTH
+            {"endpoint": "/health/", "method": "GET"},
+            {"endpoint": "/health", "method": "GET"},
+            # USER
+            {"endpoint": "/api/v1/user/", "method": "POST"},
+            {"endpoint": "/api/v1/user", "method": "POST"},
+        ]
+
+    @computed_field
+    @property
+    def SECURITY_USER_ALLOWED_PATHS(self) -> list[dict[str, str]]:  # noqa
+        return [
+            *self.SECURITY_NO_AUTH_PATHS,
+            # AUTHENTICATION
+            {"endpoint": "/api/v1/authentication/refresh/", "method": "PATCH"},
+            {"endpoint": "/api/v1/authentication/refresh", "method": "PATCH"},
+            # USER
+            {"endpoint": "/api/v1/user/me", "method": "GET"},
+            {"endpoint": "/api/v1/user/me/", "method": "GET"},
+        ]
+
+    @computed_field
+    @property
+    def SECURITY_MANAGER_ALLOWED_PATHS(self) -> list[dict[str, str]]:  # noqa
+        return [
+            *self.SECURITY_USER_ALLOWED_PATHS,
+        ]
+
+    @computed_field
+    @property
+    def SECURITY_ADMIN_ALLOWED_PATHS(self) -> list[dict[str, str]]:  # noqa
+        return [
+            *self.SECURITY_MANAGER_ALLOWED_PATHS,
+            # HEALTH
+            {"endpoint": "/api/v1/alembic-version/", "method": "GET"},
+            {"endpoint": "/api/v1/alembic-version", "method": "GET"},
+        ]
+
+    @computed_field
+    @property
+    def SECURITY_API_KEY_ALLOWED_PATHS(self) -> list[dict[str, str]]:  # noqa
+        return []
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        if ":" in self.POSTGRESQL_HOST:
+            host_parts = self.POSTGRESQL_HOST.split(":")
+            self.POSTGRESQL_HOST = host_parts[0]
+            if len(host_parts) > 1 and not self.POSTGRESQL_PORT:
+                self.POSTGRESQL_PORT = host_parts[1]
+
+        for field_name, field_info in self.model_fields.items():
+            value = getattr(self, field_name)
+            if isinstance(value, str) and len(value) >= 2:
+                if (value.startswith('"') and value.endswith('"')) or (
+                    value.startswith("'") and value.endswith("'")
+                ):
+                    setattr(self, field_name, value[1:-1])
+
+        if self.APPLICATION_ENVIRONMENT not in [
+            env.value for env in ApplicationEnvironment
+        ]:
+            raise ValueError(
+                f"Invalid execution environment: {self.APPLICATION_ENVIRONMENT}."
+                f"The environment must be {', '.join([env.value for env in ApplicationEnvironment])} (case-sensitive). "
+                f"Please check your .env file."
+            )
 
 
 settings = Settings()  # type: ignore

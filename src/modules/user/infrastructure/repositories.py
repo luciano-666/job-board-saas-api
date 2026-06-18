@@ -9,7 +9,6 @@ from src.modules.shared.presentation.exceptions import StandardException
 from src.modules.user.application.interfaces import IUserRepository
 from src.modules.user.domain.entities import User
 from src.modules.user.domain.value_objects import Email
-from src.modules.user.infrastructure.mappers import to_model, to_entity
 from src.modules.user.infrastructure.models import UserModel
 from src.modules.user.presentation.exceptions import UserException
 
@@ -25,7 +24,7 @@ class SqlAlchemyUserRepository(IUserRepository):
         try:
             logger.info(f"Creating user {user.email.__str__()} in database.")
 
-            db_user = to_model(user)
+            db_user = UserModel.from_entity(user)
 
             self.session.add(db_user)
             await self.session.flush()
@@ -86,7 +85,7 @@ class SqlAlchemyUserRepository(IUserRepository):
                 logger.info(f"User with id {id} not found in database.")
                 return None
 
-            user = to_entity(user_model)
+            user = UserModel.to_entity(user_model)
 
             logger.info(f"User with id {user.id} retrieved successfully from database.")
             return user
@@ -115,7 +114,7 @@ class SqlAlchemyUserRepository(IUserRepository):
                 )
                 return None
 
-            user = to_entity(user_model)
+            user = UserModel.to_entity(user_model)
 
             logger.info(f"User {user.email} retrieved successfully.")
             return user
