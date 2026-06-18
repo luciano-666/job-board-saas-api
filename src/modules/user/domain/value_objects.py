@@ -5,8 +5,8 @@ from src.modules.shared.presentation.exceptions import DomainError
 
 
 class Name:
-    first_name: str
-    last_name: str
+    first_name: str = ""
+    last_name: str = ""
     preferred_name: str | None = None
 
     def __init__(

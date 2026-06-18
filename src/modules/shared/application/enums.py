@@ -41,3 +41,9 @@ class Role(str, Enum):
     ADMIN = "admin"
     EMPLOYER = "employer"
     CANDIDATE = "candidate"
+
+
+class ApplicationEnvironment(str, Enum):
+    DEV = "dev"
+    HOMOLOG = "homolog"
+    PRODUCTION = "production"

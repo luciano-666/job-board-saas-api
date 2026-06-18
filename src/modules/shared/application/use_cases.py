@@ -14,7 +14,7 @@ from src.modules.user.presentation.exceptions import (
     UserEmailNotFoundException,
 )
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(__name__)
 
 
 class SharedUseCases:

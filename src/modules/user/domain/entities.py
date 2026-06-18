@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, UTC
 from uuid import UUID, uuid4
 
 from src.modules.shared.application.enums import Role
@@ -10,7 +10,11 @@ from src.modules.user.domain.value_objects import Name, Email, Phone
 
 @dataclass(kw_only=True, slots=True)
 class User:
-    name: Name | None = field(default=None, repr=True, compare=False)
+    name: Name = field(
+        default_factory=lambda: Name(first_name="", last_name="", preferred_name=None),
+        repr=True,
+        compare=False,
+    )
     gender: Gender | None = field(default=None, repr=False, compare=False)
     birthdate: date | None = field(default=None, repr=True, compare=False)
     email: Email | str = field(repr=True, compare=True)
@@ -19,7 +23,9 @@ class User:
 
     # Application generated fields
     id: UUID = field(default_factory=uuid4, repr=True, compare=True)
-    is_active: bool = field(init=False, default=True, repr=False, compare=False)
+    created_at: datetime = field(default=datetime.now(UTC), repr=False, compare=True)
+    updated_at: datetime = field(default=datetime.now(UTC), repr=False, compare=False)
+    is_active: bool = field(default=True, repr=False, compare=False)
     hashed_password: str | None = field(default=None, repr=False, compare=False)
     role: Role = field(default=Role.CANDIDATE, repr=False, compare=False)
 

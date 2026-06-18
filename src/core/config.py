@@ -5,6 +5,8 @@ from pydantic import computed_field, PostgresDsn, EmailStr, AnyUrl
 
 import secrets
 
+from src.modules.shared.application.enums import ApplicationEnvironment
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -83,6 +85,19 @@ class Settings(BaseSettings):
 
     # Sentry — optional, no-op when unset (local dev)
     SENTRY_DSN: AnyUrl | None = None
+
+    # APPLICATION
+    APPLICATION_TABLE_PREFIX: str
+    APPLICATION_ENVIRONMENT: str
+
+    # APPLICATION
+    @computed_field
+    @property
+    def APPLICATION_ENVIRONMENT_DEBUG(self) -> bool:  # noqa
+        if self.APPLICATION_ENVIRONMENT == ApplicationEnvironment.PRODUCTION.value:
+            return False
+        else:
+            return True
 
 
 settings = Settings()  # type: ignore
