@@ -6,10 +6,18 @@ from pwdlib.hashers.bcrypt import BcryptHasher
 from typing import Any, Tuple
 from datetime import datetime, timedelta, timezone
 
+import structlog
+
 import hashlib
 import secrets
 
 from src.core.config import settings
+from src.modules.shared.presentation.exceptions import StandardException
+from src.modules.authentication.presentation.exceptions import (
+    HashingException,
+)
+
+logger = structlog.get_logger(__name__)
 
 password_hash = PasswordHash(
     (
@@ -34,8 +42,14 @@ def verify_password(
     return password_hash.verify_and_update(plain_password, hashed_password)
 
 
-def get_password_hash(password: str) -> str:
-    return password_hash.hash(password)
+def hash_password(password: str) -> str:
+    try:
+        return password_hash.hash(password)
+    except StandardException:
+        raise
+    except Exception as e:
+        logger.opt(exception=e).error("An error occurred during password hashing.")
+        raise HashingException()
 
 
 def create_refresh_token() -> Tuple[str, str]:
