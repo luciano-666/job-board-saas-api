@@ -7,99 +7,129 @@ from uuid import UUID
 from src.modules.authentication.application.enums import TokenType
 from src.modules.authentication.domain.value_objects import Claims, RefreshClaims
 from src.modules.shared.application.enums import Role
-from src.modules.shared.domain.entities import DomainError
 from src.modules.user.domain.entities import User
 
 
+# ---------------------------------------------------------------------------
+# AccessToken
+# ---------------------------------------------------------------------------
+
+
 @dataclass(kw_only=True, slots=True)
-class Session:
-    ip_address: str | None = field(default=None, repr=True, compare=True)
-    user_agent: str | None = field(default=None, repr=True, compare=True)
-    device: str | None = field(default=None, repr=True, compare=True)
-    location: str | None = field(default=None, repr=True, compare=False)
-    accept_language: str | None = field(default=None, repr=True, compare=False)
-    accept_encoding: str | None = field(default=None, repr=True, compare=False)
-    origin: str | None = field(default=None, repr=True, compare=False)
-    referer: str | None = field(default=None, repr=True, compare=False)
+class AccessToken:
+    """Represents a JWT access token and its metadata.
 
-    # Application generated fields
-    id: UUID | None = field(default=None, repr=True, compare=True)
-    created_at: datetime | None = field(default=None, repr=False, compare=True)
-    last_updated_at: datetime | None = field(default=None, repr=False, compare=False)
-    blacklisted: bool = field(init=False, default=False, repr=False, compare=False)
-    token_type: TokenType = field(
-        init=False, default=TokenType.BEARER, repr=False, compare=False
-    )
+    Lifecycle:
+      - Created with only expiry info (before token generation).
+      - After generate_tokens(): token and hashed_jti are populated.
+      - After DB persist: id is populated.
+    """
 
-    # Foreign entities
-    user: User | None = field(default=None, compare=True, repr=True)
-    refresh_token: RefreshToken | None = field(default=None, compare=True, repr=True)
+    expires_at: datetime
+    permission: Role = field(default=Role.CANDIDATE)
 
-    def __post_init__(self):
-        self._normalize()
+    # Populated after token generation
+    token: str | None = field(default=None, repr=False)
+    hashed_jti: str | None = field(default=None, repr=False)
+    previous_hashed_jti: str | None = field(default=None, repr=False)
+    claims: Claims | None = field(default=None, repr=False)
 
-    def _normalize(self):
-        self.ip_address = self.ip_address.lower().strip() if self.ip_address else None
-        self.user_agent = self.user_agent.lower().strip() if self.user_agent else None
-        self.accept_language = (
-            self.accept_language.lower().strip() if self.accept_language else None
-        )
-        self.accept_encoding = (
-            self.accept_encoding.lower().strip() if self.accept_encoding else None
-        )
-        self.origin = self.origin.lower().strip() if self.origin else None
-        self.referer = self.referer.lower().strip() if self.referer else None
-        self.location = self.location.lower().strip() if self.location else None
+    # Populated after DB persist
+    id: UUID | None = field(default=None, repr=True)
+    created_at: datetime | None = field(default=None, repr=False)
 
-    def update_last_updated_at(self):
-        self.last_updated_at = datetime.now(UTC)
+    # Revocation state
+    revoked: bool = field(default=False, repr=False)
+    revoked_at: datetime | None = field(default=None, repr=False)
 
-
-@dataclass(kw_only=True)
-class RefreshToken:
-    token: str | None = field(default=None, repr=False, compare=False)
-    hashed_jti: str | None = field(default=None, repr=False, compare=True)
-    previous_hashed_jti: str | None = field(default=None, repr=False, compare=True)
-
-    # Application generated fields
-    replaced_by_token: UUID | None = field(default=None, repr=False, compare=False)
-    id: UUID | None = field(default=None, repr=True, compare=True)
-    created_at: datetime | None = field(default=None, repr=False, compare=True)
-    updated_at: datetime | None = field(default=None, repr=False, compare=False)
-    expires_at: datetime | None = field(default=None, repr=False, compare=False)
-    revoked: bool = field(init=False, default=False, repr=False, compare=False)
-    revoked_at: datetime | None = field(
-        init=False, default=None, repr=False, compare=False
-    )
-    refresh_claims: RefreshClaims | None = field(
-        default=None, repr=False, compare=False
-    )
-
-    # Foreign entities
-    access_token: AccessToken | None = field(default=None, repr=False, compare=False)
-
-    def __post_init__(self):
-        self._validate()
-
-    def _validate(self):
-        if self.revoked:
-            raise DomainError("Refresh token has been revoked.")
-
-    def revoke(self):
+    def revoke(self) -> None:
         self.revoked = True
         self.revoked_at = datetime.now(UTC)
 
-    def activate(self):
+    def activate(self) -> None:
         self.revoked = False
         self.revoked_at = None
 
-    def generate_created_at(self):
+    def stamp_created_at(self) -> None:
         self.created_at = datetime.now(UTC)
 
-    def generate_updated_at(self):
+    def rotate_jti(self) -> None:
+        """Save current hashed_jti as previous before issuing a new one."""
+        self.previous_hashed_jti = self.hashed_jti
+
+    def set_claims(
+        self,
+        iss: str,
+        sub: UUID,
+        aud: str,
+        jti: UUID,
+        grant_id: str,
+        scope: str,
+    ) -> None:
+        if self.created_at is None:
+            raise ValueError("created_at must be set before generating claims.")
+        self.claims = Claims(
+            iss=iss,
+            sub=sub,
+            aud=aud,
+            iat=int(self.created_at.timestamp()),
+            nbf=int(self.created_at.timestamp()),
+            exp=int(self.expires_at.timestamp()),
+            jti=jti,
+            grant_id=grant_id,
+            scope=scope,
+        )
+
+
+# ---------------------------------------------------------------------------
+# RefreshToken
+# ---------------------------------------------------------------------------
+
+
+@dataclass(kw_only=True, slots=True)
+class RefreshToken:
+    """Represents a refresh token paired with one AccessToken.
+
+    Lifecycle:
+      - Created with only expiry info.
+      - After token generation: token and hashed_jti are populated.
+      - After DB persist: id is populated.
+    """
+
+    expires_at: datetime
+    access_token: AccessToken
+
+    # Populated after token generation
+    token: str | None = field(default=None, repr=False)
+    hashed_jti: str | None = field(default=None, repr=False)
+    previous_hashed_jti: str | None = field(default=None, repr=False)
+    refresh_claims: RefreshClaims | None = field(default=None, repr=False)
+
+    # Populated after DB persist
+    id: UUID | None = field(default=None, repr=True)
+    created_at: datetime | None = field(default=None, repr=False)
+    updated_at: datetime | None = field(default=None, repr=False)
+
+    # Revocation state
+    revoked: bool = field(default=False, repr=False)
+    revoked_at: datetime | None = field(default=None, repr=False)
+
+    def revoke(self) -> None:
+        self.revoked = True
+        self.revoked_at = datetime.now(UTC)
+
+    def activate(self) -> None:
+        self.revoked = False
+        self.revoked_at = None
+
+    def stamp_created_at(self) -> None:
+        self.created_at = datetime.now(UTC)
+
+    def stamp_updated_at(self) -> None:
         self.updated_at = datetime.now(UTC)
 
-    def update_previous_hashed_jti(self):
+    def rotate_jti(self) -> None:
+        """Save current hashed_jti as previous before issuing a new one."""
         self.previous_hashed_jti = self.hashed_jti
 
     def set_claims(
@@ -113,11 +143,7 @@ class RefreshToken:
         scope: str,
     ) -> None:
         if self.updated_at is None:
-            raise DomainError("updated_at is required before generating claims.")
-
-        if self.expires_at is None:
-            raise DomainError("expires_at is required before generating claims.")
-
+            raise ValueError("updated_at must be set before generating claims.")
         self.refresh_claims = RefreshClaims(
             iss=iss,
             sub=sub,
@@ -132,54 +158,81 @@ class RefreshToken:
         )
 
 
-@dataclass(kw_only=True)
-class AccessToken:
-    token: str | None = field(default=None, repr=False, compare=False)
-    hashed_jti: str | None = field(default=None, repr=False, compare=True)
-    previous_hashed_jti: str | None = field(default=None, repr=False, compare=True)
-    permission: Role = field(default=Role.CANDIDATE, repr=False, compare=False)
+# ---------------------------------------------------------------------------
+# SessionRequest  — input from the HTTP layer, before any DB interaction
+# ---------------------------------------------------------------------------
 
-    # Application generated fields
-    id: UUID | None = field(default=None, repr=True, compare=True)
-    created_at: datetime | None = field(default=None, repr=False, compare=True)
-    expires_at: datetime | None = field(default=None, repr=False, compare=False)
-    claims: Claims | None = field(default=None, repr=False, compare=False)
-    revoked: bool = field(init=False, default=False, repr=False, compare=False)
-    revoked_at: datetime | None = field(
-        init=False, default=None, repr=False, compare=False
-    )
 
-    def revoke(self):
-        self.revoked = True
-        self.revoked_at = datetime.now(UTC)
+@dataclass(kw_only=True, slots=True)
+class SessionRequest:
+    """Captures request context collected at the presentation layer.
 
-    def activate(self):
-        self.revoked = False
-        self.revoked_at = None
+    Passed into AuthenticationUseCases.login().
+    The user field must already hold verified credentials (email + raw password)
+    so the use case can authenticate against the DB record.
+    """
 
-    def generate_created_at(self):
-        self.created_at = datetime.now(UTC)
+    user: User
+    ip_address: str
+    user_agent: str
+    device: str
+    location: str | None = field(default=None)
+    accept_language: str | None = field(default=None)
+    accept_encoding: str | None = field(default=None)
+    origin: str | None = field(default=None)
+    referer: str | None = field(default=None)
 
-    def update_previous_hashed_jti(self):
-        self.previous_hashed_jti = self.hashed_jti
+    def __post_init__(self) -> None:
+        self._normalize()
 
-    def set_claims(
-        self, iss: str, sub: UUID, aud: str, jti: UUID, grant_id: str, scope: str
-    ) -> None:
-        if self.created_at is None:
-            raise DomainError("updated_at is required before generating claims.")
+    def _normalize(self) -> None:
+        self.ip_address = self.ip_address.lower().strip()
+        self.user_agent = self.user_agent.lower().strip()
+        self.device = self.device.lower().strip()
+        if self.accept_language:
+            self.accept_language = self.accept_language.lower().strip()
+        if self.accept_encoding:
+            self.accept_encoding = self.accept_encoding.lower().strip()
+        if self.origin:
+            self.origin = self.origin.lower().strip()
+        if self.referer:
+            self.referer = self.referer.lower().strip()
+        if self.location:
+            self.location = self.location.lower().strip()
 
-        if self.expires_at is None:
-            raise DomainError("expires_at is required before generating claims.")
 
-        self.claims = Claims(
-            iss=iss,
-            sub=sub,
-            aud=aud,
-            iat=int(self.created_at.timestamp()),
-            nbf=int(self.created_at.timestamp()),
-            exp=int(self.expires_at.timestamp()),
-            jti=jti,
-            grant_id=grant_id,
-            scope=scope,
-        )
+# ---------------------------------------------------------------------------
+# Session  — a fully persisted session returned from the repository
+# ---------------------------------------------------------------------------
+
+
+@dataclass(kw_only=True, slots=True)
+class Session:
+    """A persisted authentication session with associated tokens.
+
+    Returned by the repository after create/get operations.
+    All required fields are non-optional: the repository guarantees
+    they exist before constructing this object.
+    """
+
+    id: UUID
+    user: User
+    refresh_token: RefreshToken
+    ip_address: str
+    user_agent: str
+    device: str
+    created_at: datetime
+    last_updated_at: datetime
+    token_type: TokenType = field(default=TokenType.BEARER)
+    blacklisted: bool = field(default=False)
+
+    # Optional request metadata stored for audit / analytics
+    location: str | None = field(default=None)
+    accept_language: str | None = field(default=None)
+    accept_encoding: str | None = field(default=None)
+    origin: str | None = field(default=None)
+    referer: str | None = field(default=None)
+
+    def touch(self) -> None:
+        """Update last_updated_at to now."""
+        self.last_updated_at = datetime.now(UTC)

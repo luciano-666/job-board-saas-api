@@ -1,8 +1,6 @@
-from typing import Protocol, Optional
+from typing import Protocol
 
-from src.modules.authentication.domain.entities import (
-    Session,
-)
+from src.modules.authentication.domain.entities import Session, SessionRequest
 
 
 class IAuthenticationRepository(Protocol):
@@ -11,16 +9,14 @@ class IAuthenticationRepository(Protocol):
 
     # READ
     async def get_by_user_id_agent_and_device(
-        self, session: Session
-    ) -> Optional[Session]: ...
+        self, session: SessionRequest
+    ) -> Session | None: ...
 
-    async def get_access_token_by_session(
-        self, session: Session
-    ) -> Optional[Session]: ...
+    async def get_access_token_by_session(self, session: Session) -> Session | None: ...
 
     async def get_refresh_token_by_session(
         self, session: Session
-    ) -> Optional[Session]: ...
+    ) -> Session | None: ...
 
     # UPDATE
     async def update(self, session: Session) -> None: ...

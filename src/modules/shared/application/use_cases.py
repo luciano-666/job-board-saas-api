@@ -1,5 +1,3 @@
-from typing import Optional
-
 import structlog
 
 from src.modules.shared.domain.entities import DomainError
@@ -67,34 +65,14 @@ class SharedUseCases:
                 raise UserException()
             return None
 
-    async def get_user_by_email(self, user: User) -> Optional[User]:
-        try:
-            logger.debug(
-                f"Initializing get user by email use case for user: {user.email}."
-            )
+    async def get_user_by_email(self, user: User) -> User:
+        logger.debug(f"Initializing get user by email use case for user: {user.email}.")
 
-            db_user = await self.user_repository.get_by_email(user.email)
+        db_user = await self.user_repository.get_by_email(user.email)
 
-            if db_user is None and self._raise_exceptions:
-                logger.info(
-                    f"User with email {user.email} not found. Raising exception."
-                )
-                raise UserEmailNotFoundException(email=user.email.__str__())
+        if db_user is None:
+            logger.info(f"User with email {user.email} not found. Raising exception.")
+            raise UserEmailNotFoundException(email=user.email.__str__())
 
-            logger.debug(f"User {user.email} retrieved from database successfully.")
-            return db_user
-        except StandardException:
-            if self._raise_exceptions:
-                raise
-            return None
-        except DomainError as e:
-            if self._raise_exceptions:
-                raise DomainException(e)
-            return None
-        except Exception as e:
-            logger.opt(exception=e).error(
-                "An unexpected error occurred during the get user by email use case."
-            )
-            if self._raise_exceptions:
-                raise UserException()
-            return None
+        logger.debug(f"User {user.email} retrieved from database successfully.")
+        return db_user
