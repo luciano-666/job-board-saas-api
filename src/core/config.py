@@ -146,6 +146,17 @@ class Settings(BaseSettings):
     SECURITY_ADMIN_EMAIL: str
     SECURITY_ADMIN_PASSWORD: str
 
+    # COOKIES
+    @computed_field
+    @property
+    def COOKIES_ACCESS_TOKEN_MAX_AGE(self) -> int:  # noqa
+        return self.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+    @computed_field
+    @property
+    def COOKIES_REFRESH_TOKEN_MAX_AGE(self) -> int:  # noqa
+        return self.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+
     # SECURITY
     @computed_field
     @property

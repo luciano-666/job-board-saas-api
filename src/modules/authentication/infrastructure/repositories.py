@@ -6,7 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from src.modules.authentication.application.interfaces import IAuthenticationRepository
-from src.modules.authentication.domain.entities import Session, SessionRequest
+from src.modules.authentication.domain.entities import (
+    Session,
+    SessionRequest,
+    SessionLookup,
+)
 
 from src.modules.authentication.infrastructure.models import (
     SessionModel,
@@ -97,7 +101,7 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
 
     async def get_access_token_by_session(
         self,
-        session: Session,
+        lookup: SessionLookup,
     ) -> Optional[Session]:
         try:
             logger.info(
@@ -105,17 +109,16 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
             )
 
             conditions = [
-                AccessTokenModel.hashed_jti
-                == session.refresh_token.access_token.hashed_jti,
-                SessionModel.user_agent == session.user_agent,
-                SessionModel.user_id == session.user.id,
+                AccessTokenModel.hashed_jti == lookup.hashed_jti,
+                SessionModel.user_agent == lookup.user_agent,
+                SessionModel.user_id == lookup.user_id,
                 AccessTokenModel.revoked.is_(False),
                 RefreshTokenModel.revoked.is_(False),
                 SessionModel.blacklisted.is_(False),
             ]
 
-            if session.device is not None:
-                conditions.append(SessionModel.device == session.device)
+            if lookup.device is not None:
+                conditions.append(SessionModel.device == lookup.device)
 
             statement = (
                 select(SessionModel)
@@ -155,7 +158,7 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
 
     async def get_refresh_token_by_session(
         self,
-        session: Session,
+        lookup: SessionLookup,
     ) -> Optional[Session]:
         try:
             logger.info(
@@ -163,15 +166,15 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
             )
 
             conditions = [
-                RefreshTokenModel.hashed_jti == session.refresh_token.hashed_jti,
-                SessionModel.user_agent == session.user_agent,
-                SessionModel.user_id == session.user.id,
+                RefreshTokenModel.hashed_jti == lookup.hashed_jti,
+                SessionModel.user_agent == lookup.user_agent,
+                SessionModel.user_id == lookup.user_id,
                 RefreshTokenModel.revoked.is_(False),
                 SessionModel.blacklisted.is_(False),
             ]
 
-            if session.device is not None:
-                conditions.append(SessionModel.device == session.device)
+            if lookup.device is not None:
+                conditions.append(SessionModel.device == lookup.device)
 
             statement = (
                 select(SessionModel)

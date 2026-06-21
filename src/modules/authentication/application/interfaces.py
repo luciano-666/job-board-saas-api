@@ -1,6 +1,10 @@
 from typing import Protocol
 
-from src.modules.authentication.domain.entities import Session, SessionRequest
+from src.modules.authentication.domain.entities import (
+    Session,
+    SessionRequest,
+    SessionLookup,
+)
 
 
 class IAuthenticationRepository(Protocol):
@@ -12,10 +16,12 @@ class IAuthenticationRepository(Protocol):
         self, session: SessionRequest
     ) -> Session | None: ...
 
-    async def get_access_token_by_session(self, session: Session) -> Session | None: ...
+    async def get_access_token_by_session(
+        self, lookup: SessionLookup
+    ) -> Session | None: ...
 
     async def get_refresh_token_by_session(
-        self, session: Session
+        self, lookup: SessionLookup
     ) -> Session | None: ...
 
     # UPDATE

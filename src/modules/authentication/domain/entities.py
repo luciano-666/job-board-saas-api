@@ -236,3 +236,26 @@ class Session:
     def touch(self) -> None:
         """Update last_updated_at to now."""
         self.last_updated_at = datetime.now(UTC)
+
+
+@dataclass(kw_only=True, slots=True)
+class SessionLookup:
+    """Minimal identifying info extracted from JWT claims, used to query
+    a persisted Session by access token or refresh token.
+
+    Unlike Session, this does not represent a persisted record — it only
+    carries the fields the repository needs to run its lookup query.
+    """
+
+    user_id: UUID
+    user_agent: str
+    hashed_jti: str
+    device: str | None = field(default=None)
+
+    def __post_init__(self) -> None:
+        self._normalize()
+
+    def _normalize(self) -> None:
+        self.user_agent = self.user_agent.lower().strip()
+        if self.device:
+            self.device = self.device.lower().strip()
