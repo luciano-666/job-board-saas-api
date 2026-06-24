@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestFormStrict
 import structlog
 
-from src.core.security import (
+from src.modules.authentication.presentation.dependencies import (
     no_authentication,
     authenticate_refresh,
     authenticate_logout,

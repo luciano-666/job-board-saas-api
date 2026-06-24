@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 from fastapi import Security
 
-from src.core.security import (
+from src.modules.authentication.presentation.dependencies import (
     no_authentication,
     authenticate_refresh,
     authenticate_logout,

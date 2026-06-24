@@ -8,6 +8,10 @@ from src.modules.authentication.application.enums import TokenType
 from src.modules.authentication.domain.value_objects import Claims, RefreshClaims
 from src.modules.shared.application.enums import Role
 from src.modules.user.domain.entities import User
+from src.modules.authentication.presentation.exceptions import (
+    AuthenticationTokenInvalidException,
+    RefreshTokenInvalidException,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -259,3 +263,29 @@ class SessionLookup:
         self.user_agent = self.user_agent.lower().strip()
         if self.device:
             self.device = self.device.lower().strip()
+
+    @classmethod
+    def from_access_session(cls, session: Session) -> SessionLookup:
+        hashed_jti = session.refresh_token.access_token.hashed_jti
+        if hashed_jti is None:
+            raise AuthenticationTokenInvalidException()
+
+        return cls(
+            user_id=session.user.id,
+            user_agent=session.user_agent,
+            hashed_jti=hashed_jti,
+            device=session.device,
+        )
+
+    @classmethod
+    def from_refresh_session(cls, session: Session) -> SessionLookup:
+        hashed_jti = session.refresh_token.hashed_jti
+        if hashed_jti is None:
+            raise RefreshTokenInvalidException()
+
+        return cls(
+            user_id=session.user.id,
+            user_agent=session.user_agent,
+            hashed_jti=hashed_jti,
+            device=session.device,
+        )

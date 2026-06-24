@@ -2,7 +2,11 @@ from datetime import datetime, timedelta, UTC
 
 import structlog
 
-from src.core.security import verify_password, generate_tokens, hash_tokens
+from src.core.security import verify_password
+from src.modules.authentication.infrastructure.security import (
+    generate_tokens,
+    hash_tokens,
+)
 from src.core.config import settings
 from src.modules.authentication.application.interfaces import IAuthenticationRepository
 from src.modules.authentication.domain.entities import (
