@@ -2,6 +2,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import HTTPException, RequestValidationError
+from fastapi.openapi.utils import get_openapi
+
 
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
@@ -10,8 +14,22 @@ from sentry_sdk.integrations.starlette import StarletteIntegration
 from sentry_sdk.types import Event, Hint
 
 from src.core.logging_config import configure_logging
-from src.core.middleware.logging import RequestLoggingMiddleware
+from src.core.middleware import (
+    RequestLoggingMiddleware,
+    DeviceIdMiddleware,
+    ResponseFormattingMiddleware,
+)
 from src.core.config import settings
+from src.core.exception_handler import (
+    validation_exception_handler,
+    http_exception_handler,
+    internal_exception_handler,
+)
+
+from src.modules.authentication.presentation.routers import (
+    router as authentication_router,
+)
+from src.modules.user.presentation.routers import router as user_router
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -84,6 +102,89 @@ async def lifespan(app: FastAPI):
     yield
 
 
+# APPLICATION
 app = FastAPI(generate_unique_id_function=custom_generate_unique_id, lifespan=lifespan)
 
+# EXCEPTION HANDLERS
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(Exception, internal_exception_handler)
+
+# MIDDLEWARES
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[str(origin) for origin in settings.SECURITY_ALLOW_ORIGINS],
+    allow_credentials=True,
+    allow_methods=[str(method) for method in settings.SECURITY_ALLOW_METHODS],
+    allow_headers=[str(header) for header in settings.SECURITY_ALLOW_HEADERS],
+)
+app.add_middleware(ResponseFormattingMiddleware)
+app.add_middleware(DeviceIdMiddleware)
+
+# ROUTERS
+routers = [
+    authentication_router,
+    user_router,
+]
+
+for router in routers:
+    app.include_router(router)
+
+
+# CUSTOM OPENAPI
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title=settings.APPLICATION_TITLE,
+        summary=settings.APPLICATION_SUMMARY,
+        description=settings.APPLICATION_DESCRIPTION,
+        version=settings.APPLICATION_VERSION,
+        tags=[
+            {
+                "name": "Authentication",
+                "description": "Endpoints for user authentication and authorization.",
+            },
+            {
+                "name": "Example",
+                "description": "Example module for demonstrating application features.",
+            },
+            {
+                "name": "Health",
+                "description": "Endpoints for monitoring the health of the application.",
+            },
+            {
+                "name": "User",
+                "description": "Endpoints for managing user resources.",
+            },
+        ],
+        contact={
+            "name": settings.APPLICATION_CONTACT_NAME,
+            "url": settings.APPLICATION_CONTACT_URL,
+            "email": settings.APPLICATION_CONTACT_EMAIL,
+            "phone": settings.APPLICATION_CONTACT_PHONE,
+        },
+        routes=app.routes,
+    )
+
+    openapi_schema["components"]["securitySchemes"] = {
+        settings.AUTH_BEARER_TOKEN_SCHEME_NAME: {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        },
+        settings.AUTH_API_KEY_SCHEME_NAME: {
+            "type": "apiKey",
+            "in": "header",
+            "name": settings.AUTH_API_KEY_HEADER,
+            "description": "API Key necessary to access the API endpoints.",
+        },
+    }
+
+    app.openapi_schema = openapi_schema
+    return openapi_schema
+
+
+app.openapi = custom_openapi
