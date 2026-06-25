@@ -33,7 +33,7 @@ class AccessTokenModel(Base):
     __tablename__ = f"{settings.APPLICATION_TABLE_PREFIX}_access_tokens"
     __table_args__ = (
         UniqueConstraint("refresh_id", name="uq_access_tokens_refresh_id"),
-        Index("ix_hashed_jti_revoked", "hashed_jti", "revoked"),
+        Index("ix_access_tokens_hashed_jti_revoked", "hashed_jti", "revoked"),
     )
     __mapper_args__ = {"eager_defaults": True}
 
@@ -140,7 +140,7 @@ class RefreshTokenModel(Base):
     __tablename__ = f"{settings.APPLICATION_TABLE_PREFIX}_refresh_tokens"
     __table_args__ = (
         UniqueConstraint("session_id", name="uq_refresh_tokens_session_id"),
-        Index("ix_hashed_jti_revoked", "hashed_jti", "revoked"),
+        Index("ix_refresh_tokens_hashed_jti_revoked", "hashed_jti", "revoked"),
     )
     __mapper_args__ = {"eager_defaults": True}
 

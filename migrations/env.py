@@ -8,8 +8,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from src.core.config import settings
-from src.shared.adapters.models import Base
-from src.modules.users.adapters.orm import UserORM  # noqa: F401
+from src.modules.shared.infrastructure.models import Base
+import src.modules.authentication.infrastructure.models  # noqa: F401
+import src.modules.user.infrastructure.models  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
