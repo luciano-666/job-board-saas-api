@@ -37,7 +37,7 @@ class UserUseCases:
                 raise UserEmailAlreadyExistsException(email=user.email.__str__())
 
             user.hashed_password = (
-                hash_password(user.password) if user.password else None
+                await hash_password(user.password) if user.password else None
             )
             await self.repository.create(user)
 

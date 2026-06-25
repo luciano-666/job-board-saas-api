@@ -148,14 +148,6 @@ def custom_openapi():
                 "description": "Endpoints for user authentication and authorization.",
             },
             {
-                "name": "Example",
-                "description": "Example module for demonstrating application features.",
-            },
-            {
-                "name": "Health",
-                "description": "Endpoints for monitoring the health of the application.",
-            },
-            {
                 "name": "User",
                 "description": "Endpoints for managing user resources.",
             },

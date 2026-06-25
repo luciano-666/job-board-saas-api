@@ -9,8 +9,8 @@ from sqlalchemy.pool import NullPool
 
 from src.core.config import settings
 from src.main import app
-from src.shared.adapters.models import Base
-from src.core.dependencies import get_db
+from src.modules.shared.infrastructure.models import Base
+from src.core.database import get_async_session
 
 
 pytest_plugins = ["anyio"]
@@ -74,7 +74,7 @@ async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     async def override_get_db():
         yield db
 
-    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_async_session] = override_get_db
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
@@ -82,4 +82,4 @@ async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     ) as ac:
         yield ac
 
-    app.dependency_overrides.pop(get_db, None)
+    app.dependency_overrides.pop(get_async_session, None)

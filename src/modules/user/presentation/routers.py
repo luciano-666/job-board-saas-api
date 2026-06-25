@@ -3,7 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 import structlog
 
-from src.core.security import authenticate_user, no_authentication
+from src.modules.authentication.presentation.dependencies import (
+    authenticate_user,
+    no_authentication,
+)
 from src.modules.shared.presentation.exceptions import (
     StandardException,
     DomainError,

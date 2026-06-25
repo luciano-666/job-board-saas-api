@@ -2,7 +2,10 @@ from http import HTTPStatus
 
 from fastapi import Security
 
-from src.core.security import authenticate_user, no_authentication
+from src.modules.authentication.presentation.dependencies import (
+    authenticate_user,
+    no_authentication,
+)
 from src.modules.shared.application.enums import ResponseMessages, Role
 from src.modules.shared.presentation.schemas import StandardResponse
 from src.modules.user.application.enums import Gender
