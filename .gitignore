@@ -15,3 +15,10 @@ wheels/
 # Cache
 .ruff_cache/
 .pytest_cache/
+
+# secret keys
+*.pyc
+secrets/keys/encryption-private.pem
+secrets/keys/encryption-public.pem
+secrets/keys/signing-private.pem
+secrets/keys/signing-public.pem

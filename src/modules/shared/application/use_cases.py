@@ -58,8 +58,9 @@ class SharedUseCases:
                 raise DomainException(e)
             return None
         except Exception as e:
-            logger.opt(exception=e).error(
-                "An unexpected error occurred during the get user by email use case."
+            logger.error(
+                "An unexpected error occurred during the get user by email use case.",
+                exc_info=e,
             )
             if self._raise_exceptions:
                 raise UserException()

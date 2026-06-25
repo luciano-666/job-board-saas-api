@@ -1,9 +1,10 @@
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import computed_field, PostgresDsn, AnyUrl, AnyHttpUrl
+from pydantic import computed_field, PostgresDsn, AnyUrl, AnyHttpUrl, model_validator
 
 import secrets
+import json
 
 from src.modules.shared.application.enums import ApplicationEnvironment
 
@@ -113,12 +114,36 @@ class Settings(BaseSettings):
     AUTH_API_KEY_HEADER_DESCRIPTION: str
 
     # SECURITY SETTINGS
-    SECURITY_ALLOW_ORIGINS: list[str]
-    SECURITY_ALLOW_HEADERS: list[str]
-    SECURITY_ALLOW_METHODS: list[str]
-    SECURITY_EMAIL_ALLOWED_DOMAINS: list[str]
+    SECURITY_ALLOW_ORIGINS: list[str] | str = []
+    SECURITY_ALLOW_HEADERS: list[str] | str = []
+    SECURITY_ALLOW_METHODS: list[str] | str = []
+    SECURITY_EMAIL_ALLOWED_DOMAINS: list[str] | str = []
     SECURITY_ADMIN_EMAIL: str
     SECURITY_ADMIN_PASSWORD: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_list_fields(cls, values: dict) -> dict:
+        for field in (
+            "SECURITY_ALLOW_ORIGINS",
+            "SECURITY_ALLOW_HEADERS",
+            "SECURITY_ALLOW_METHODS",
+            "SECURITY_EMAIL_ALLOWED_DOMAINS",
+        ):
+            v = values.get(field)
+            if isinstance(v, str):
+                v = v.strip()
+                if v.startswith("["):
+                    try:
+                        values[field] = json.loads(v)
+                    except json.JSONDecodeError:
+                        # strip brackets, split by comma
+                        values[field] = [
+                            i.strip().strip("\"'") for i in v[1:-1].split(",")
+                        ]
+                elif "," in v:
+                    values[field] = [i.strip() for i in v.split(",")]
+        return values
 
     # COOKIES
     @computed_field

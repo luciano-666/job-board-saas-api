@@ -178,7 +178,7 @@ class AuthenticationUseCases:
         except DomainError as e:
             raise DomainException(e)
         except Exception as e:
-            logger.opt(exception=e).error("Unexpected error during login.")
+            logger.error("Unexpected error during login.", exc_info=e)
             raise AuthenticationException()
 
     # ------------------------------------------------------------------
@@ -216,7 +216,7 @@ class AuthenticationUseCases:
         except DomainError as e:
             raise DomainException(e)
         except Exception as e:
-            logger.opt(exception=e).error("Unexpected error during token refresh.")
+            logger.error("Unexpected error during token refresh.", exc_info=e)
             raise AuthenticationException()
 
     # ------------------------------------------------------------------
@@ -245,5 +245,5 @@ class AuthenticationUseCases:
         except DomainError as e:
             raise DomainException(e)
         except Exception as e:
-            logger.opt(exception=e).error("Unexpected error during logout.")
+            logger.error("Unexpected error during logout.", exc_info=e)
             raise AuthenticationException()

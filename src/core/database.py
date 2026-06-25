@@ -42,14 +42,16 @@ async def get_async_session() -> AsyncIterator[AsyncSession]:
             await session.rollback()
             raise
         except SQLAlchemyError as e:
-            logger.opt(exception=e).error(
-                "An asynchronous database error occurred during the session."
+            logger.error(
+                "An asynchronous database error occurred during the session.",
+                exc_info=e,
             )
             await session.rollback()
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "An unexpected error occurred during the asynchronous database session."
+            logger.error(
+                "An unexpected error occurred during the asynchronous database session.",
+                exc_info=e,
             )
             await session.rollback()
             raise

@@ -16,7 +16,7 @@ async def hash_password(password: str) -> str:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during password hashing.")
+        logger.error("An error occurred during password hashing.", exc_info=e)
         raise HashingException()
 
 
@@ -26,5 +26,5 @@ async def verify_password(plain_password: str, hashed_password: str) -> bool:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during password verification.")
+        logger.error("An error occurred during password verification.", exc_info=e)
         raise HashingException()

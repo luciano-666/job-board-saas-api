@@ -31,7 +31,7 @@ async def validation_exception_handler(request: Request, exc: Exception) -> Resp
     )
 
     return Response(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content=response_content.model_dump_json(),
         media_type="application/json",
     )

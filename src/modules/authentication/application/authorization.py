@@ -45,7 +45,7 @@ async def has_access_to_endpoint(
     except StandardException:
         return False
     except Exception as e:
-        logger.opt(exception=e).error(
-            "An error occurred during has access to endpoint process."
+        logger.error(
+            "An error occurred during has access to endpoint process.", exc_info=e
         )
         return False

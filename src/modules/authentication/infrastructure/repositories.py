@@ -46,8 +46,8 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
         except StandardException:
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "An error occurred in the create session repository."
+            logger.error(
+                "An error occurred in the create session repository.", exc_info=e
             )
             raise AuthenticationException()
 
@@ -94,8 +94,9 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
         except StandardException:
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "An error occurred in the get session by user agent and device repository."
+            logger.error(
+                "An error occurred in the get session by user agent and device repository.",
+                exc_info=e,
             )
             raise
 
@@ -151,8 +152,9 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
         except StandardException:
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "An error occurred in the get access token by hashed_jti repository."
+            logger.error(
+                "An error occurred in the get access token by hashed_jti repository.",
+                exc_info=e,
             )
             raise
 
@@ -206,8 +208,9 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
         except StandardException:
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "An error occurred in the get access token by hashed_jti repository."
+            logger.error(
+                "An error occurred in the get access token by hashed_jti repository.",
+                exc_info=e,
             )
             raise
 
@@ -232,8 +235,8 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
         except StandardException:
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "An error occurred in the update session repository."
+            logger.error(
+                "An error occurred in the update session repository.", exc_info=e
             )
             raise AuthenticationException()
 
@@ -261,7 +264,7 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
         except StandardException:
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "An error occurred in the update session repository."
+            logger.error(
+                "An error occurred in the update session repository.", exc_info=e
             )
             raise AuthenticationException()

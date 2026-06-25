@@ -45,7 +45,7 @@ async def create(
     except DomainError as e:
         raise DomainException(e)
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred in the create user endpoint.")
+        logger.error("An error occurred in the create user endpoint.", exc_info=e)
         raise UserException()
 
 
@@ -64,5 +64,5 @@ async def me(
     except DomainError as e:
         raise DomainException(e)
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred in the me endpoint.")
+        logger.error("An error occurred in the me endpoint.", exc_info=e)
         raise UserException()

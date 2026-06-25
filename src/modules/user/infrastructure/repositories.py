@@ -36,9 +36,7 @@ class SqlAlchemyUserRepository(IUserRepository):
         except StandardException:
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "An error occurred in the create user repository."
-            )
+            logger.error("An error occurred in the create user repository.", exc_info=e)
             raise UserException()
 
     # READ
@@ -65,8 +63,9 @@ class SqlAlchemyUserRepository(IUserRepository):
         except StandardException:
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "Unexpected error during the existence check of a user in the database."
+            logger.error(
+                "Unexpected error during the existence check of a user in the database.",
+                exc_info=e,
             )
             raise UserException()
 
@@ -92,8 +91,8 @@ class SqlAlchemyUserRepository(IUserRepository):
         except StandardException:
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "Unexpected error during the get user by id repository."
+            logger.error(
+                "Unexpected error during the get user by id repository.", exc_info=e
             )
             raise UserException()
 
@@ -121,7 +120,8 @@ class SqlAlchemyUserRepository(IUserRepository):
         except StandardException:
             raise
         except Exception as e:
-            logger.opt(exception=e).error(
-                "Unexpected error during the get by email of a user in the database."
+            logger.error(
+                "Unexpected error during the get by email of a user in the database.",
+                exc_info=e,
             )
             raise UserException()

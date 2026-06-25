@@ -84,7 +84,7 @@ async def set_cookies(response: Response, session: Session) -> None:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred in the set_cookies function.")
+        logger.error("An error occurred in the set_cookies function.", exc_info=e)
         raise CookieManagementException()
 
 
@@ -117,9 +117,7 @@ async def delete_cookies(response: Response) -> None:
             samesite="lax",
         )
     except Exception as e:
-        logger.opt(exception=e).error(
-            "An error occurred in the delete_cookies function."
-        )
+        logger.error("An error occurred in the delete_cookies function.", exc_info=e)
         raise CookieManagementException()
 
 
@@ -145,7 +143,7 @@ async def login(
     except DomainError as e:
         raise DomainException(e)
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred in the login endpoint.")
+        logger.error("An error occurred in the login endpoint.", exc_info=e)
         raise AuthenticationException()
 
 
@@ -168,7 +166,7 @@ async def refresh(
     except DomainError as e:
         raise DomainException(e)
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred in the refresh endpoint.")
+        logger.error("An error occurred in the refresh endpoint.", exc_info=e)
         raise AuthenticationException()
 
 
@@ -190,5 +188,5 @@ async def logout(
     except DomainError as e:
         raise DomainException(e)
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred in the logout endpoint.")
+        logger.error("An error occurred in the logout endpoint.", exc_info=e)
         raise AuthenticationException()

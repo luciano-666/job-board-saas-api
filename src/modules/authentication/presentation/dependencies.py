@@ -79,9 +79,7 @@ async def no_authentication(request: Request) -> None:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error(
-            "An error occurred during no authentication process."
-        )
+        logger.error("An error occurred during no authentication process.", exc_info=e)
         raise AuthenticationException()
 
 
@@ -141,8 +139,8 @@ async def authenticate_user(
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error(
-            "An error occurred during user authentication process."
+        logger.error(
+            "An error occurred during user authentication process.", exc_info=e
         )
         raise AuthenticationException()
 
@@ -211,8 +209,8 @@ async def authenticate_manager(
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error(
-            "An error occurred during manager authentication process."
+        logger.error(
+            "An error occurred during manager authentication process.", exc_info=e
         )
         raise AuthenticationException()
 
@@ -281,8 +279,8 @@ async def authenticate_admin(
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error(
-            "An error occurred during admin authentication process."
+        logger.error(
+            "An error occurred during admin authentication process.", exc_info=e
         )
         raise AuthenticationException()
 
@@ -333,8 +331,8 @@ async def authenticate_refresh(
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error(
-            "An error occurred during admin authentication process."
+        logger.error(
+            "An error occurred during admin authentication process.", exc_info=e
         )
         raise RefreshTokenException()
 
@@ -399,7 +397,7 @@ async def authenticate_logout(
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error(
-            "An error occurred during admin authentication process."
+        logger.error(
+            "An error occurred during admin authentication process.", exc_info=e
         )
         raise RefreshTokenException()

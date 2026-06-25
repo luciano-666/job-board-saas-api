@@ -51,7 +51,7 @@ async def _read_pem(path: str) -> bytes:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during pem file reading.")
+        logger.error("An error occurred during pem file reading.", exc_info=e)
         raise AuthenticationException()
 
 
@@ -65,7 +65,7 @@ async def load_signing_private_key() -> jwk.JWK:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during private key loading.")
+        logger.error("An error occurred during private key loading.", exc_info=e)
         raise AuthenticationException()
 
 
@@ -75,7 +75,7 @@ async def load_signing_public_key() -> jwk.JWK:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during public key loading.")
+        logger.error("An error occurred during public key loading.", exc_info=e)
         raise AuthenticationException()
 
 
@@ -89,7 +89,7 @@ async def load_encryption_private_key() -> jwk.JWK:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during private key loading.")
+        logger.error("An error occurred during private key loading.", exc_info=e)
         raise AuthenticationException()
 
 
@@ -101,7 +101,7 @@ async def load_encryption_public_key() -> jwk.JWK:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during public key loading.")
+        logger.error("An error occurred during public key loading.", exc_info=e)
         raise AuthenticationException()
 
 
@@ -190,7 +190,7 @@ async def generate_tokens(session: Session) -> Session:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during token generation.")
+        logger.error("An error occurred during token generation.", exc_info=e)
         raise AuthenticationException()
 
 
@@ -326,12 +326,13 @@ async def decode_nested_access_token(token: str) -> Session:
         )
         raise AuthenticationTokenMalformedError()
     except JWException as e:
-        logger.opt(exception=e).error(
-            "Attempt to use a token with an invalid format or signature. Raising token authentication exception."
+        logger.error(
+            "Attempt to use a token with an invalid format or signature. Raising token authentication exception.",
+            exc_info=e,
         )
         raise AuthenticationTokenException()
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during token decoding.")
+        logger.error("An error occurred during token decoding.", exc_info=e)
         raise AuthenticationTokenException()
 
 
@@ -411,14 +412,13 @@ async def decode_nested_refresh_token(token: str) -> Session:
         )
         raise RefreshTokenMalformedError()
     except JWException as e:
-        logger.opt(exception=e).error(
-            "Attempt to use a refresh token with an invalid format or signature. Raising refresh token authentication exception."
+        logger.error(
+            "Attempt to use a refresh token with an invalid format or signature. Raising refresh token authentication exception.",
+            exc_info=e,
         )
         raise RefreshTokenException()
     except Exception as e:
-        logger.opt(exception=e).error(
-            "An error occurred during refresh token decoding."
-        )
+        logger.error("An error occurred during refresh token decoding.", exc_info=e)
         raise RefreshTokenException()
 
 
@@ -432,7 +432,7 @@ async def _token_fingerprint(material: str, namespace: str) -> str:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during token hashing.")
+        logger.error("An error occurred during token hashing.", exc_info=e)
         raise HashingException()
 
 
@@ -456,5 +456,5 @@ async def hash_tokens(session: Session) -> Session:
     except StandardException:
         raise
     except Exception as e:
-        logger.opt(exception=e).error("An error occurred during token hashing.")
+        logger.error("An error occurred during token hashing.", exc_info=e)
         raise HashingException()

@@ -48,8 +48,9 @@ class UserUseCases:
         except DomainError as e:
             raise DomainException(e)
         except Exception as e:
-            logger.opt(exception=e).error(
-                "An unexpected error occurred during the create user use case."
+            logger.error(
+                "An unexpected error occurred during the create user use case.",
+                exc_info=e,
             )
             raise UserException()
 
@@ -75,5 +76,5 @@ class UserUseCases:
         except DomainError as e:
             raise DomainException(e)
         except Exception as e:
-            logger.opt(exception=e).error("An error occurred in the me use case.")
+            logger.error("An error occurred in the me use case.", exc_info=e)
             raise UserException()
