@@ -19,13 +19,13 @@ from src.modules.authentication.presentation.exceptions import (
     AuthenticationException,
     SessionInvalidCredentialsException,
 )
-from src.modules.shared.application.use_cases import SharedUseCases
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
     DomainException,
     StandardException,
 )
 from src.modules.user.domain.entities import User
+from src.modules.shared.application.interfaces import ISharedUseCases
 
 logger = structlog.get_logger(__name__)
 
@@ -34,7 +34,7 @@ class AuthenticationUseCases:
     def __init__(
         self,
         repository: IAuthenticationRepository,
-        shared_service: SharedUseCases,
+        shared_service: ISharedUseCases,
     ) -> None:
         self.repository = repository
         self.shared_service = shared_service

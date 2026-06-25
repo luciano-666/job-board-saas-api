@@ -1,6 +1,5 @@
 import structlog
 
-from src.modules.shared.application.use_cases import SharedUseCases
 from src.modules.user.application.interfaces import IUserRepository
 from src.modules.user.domain.entities import User
 from src.core.security import hash_password
@@ -14,13 +13,14 @@ from src.modules.user.presentation.exceptions import (
     UserException,
     UserEmailNotFoundException,
 )
+from src.modules.shared.application.interfaces import ISharedUseCases
 
 logger = structlog.get_logger(__name__)
 
 
 class UserUseCases:
     def __init__(
-        self, repository: IUserRepository, shared_service: SharedUseCases
+        self, repository: IUserRepository, shared_service: ISharedUseCases
     ) -> None:
         self.repository = repository
         self.shared_service = shared_service
