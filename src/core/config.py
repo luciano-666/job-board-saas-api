@@ -3,7 +3,6 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import computed_field, PostgresDsn, AnyUrl, AnyHttpUrl, model_validator
 
-import secrets
 import json
 
 from src.modules.shared.application.enums import ApplicationEnvironment
@@ -48,8 +47,6 @@ class Settings(BaseSettings):
             port=self.POSTGRES_PORT,
             path=self.TEST_DB,
         )
-
-    SECRET_KEY: str = secrets.token_urlsafe(32)
 
     # COOKIES
     COOKIES_MAX_AGE_SECONDS: int

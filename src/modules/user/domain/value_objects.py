@@ -21,8 +21,6 @@ class Name:
     def _validate(self) -> None:
         if not self.first_name or not self.last_name:
             raise DomainError("First name and last name are required.")
-        if not self.first_name or not self.last_name:
-            raise DomainError("First name and last name are required.")
         if not re.match(r"^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$", self.first_name):
             raise DomainError(
                 "First name must contain only letters, spaces, apostrophes, and hyphens."

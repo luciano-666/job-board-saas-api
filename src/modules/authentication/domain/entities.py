@@ -8,10 +8,6 @@ from src.modules.authentication.application.enums import TokenType
 from src.modules.authentication.domain.value_objects import Claims, RefreshClaims
 from src.modules.shared.application.enums import Role
 from src.modules.user.domain.entities import User
-from src.modules.authentication.presentation.exceptions import (
-    AuthenticationTokenInvalidException,
-    RefreshTokenInvalidException,
-)
 
 
 # ---------------------------------------------------------------------------
@@ -268,7 +264,7 @@ class SessionLookup:
     def from_access_session(cls, session: Session) -> SessionLookup:
         hashed_jti = session.refresh_token.access_token.hashed_jti
         if hashed_jti is None:
-            raise AuthenticationTokenInvalidException()
+            raise
 
         return cls(
             user_id=session.user.id,
@@ -281,7 +277,7 @@ class SessionLookup:
     def from_refresh_session(cls, session: Session) -> SessionLookup:
         hashed_jti = session.refresh_token.hashed_jti
         if hashed_jti is None:
-            raise RefreshTokenInvalidException()
+            raise
 
         return cls(
             user_id=session.user.id,
