@@ -264,7 +264,9 @@ class SessionLookup:
     def from_access_session(cls, session: Session) -> SessionLookup:
         hashed_jti = session.refresh_token.access_token.hashed_jti
         if hashed_jti is None:
-            raise
+            raise ValueError(
+                "Access token hashed_jti is None — token has not been hashed yet."
+            )
 
         return cls(
             user_id=session.user.id,
@@ -277,7 +279,9 @@ class SessionLookup:
     def from_refresh_session(cls, session: Session) -> SessionLookup:
         hashed_jti = session.refresh_token.hashed_jti
         if hashed_jti is None:
-            raise
+            raise ValueError(
+                "Refresh token hashed_jti is None — token has not been hashed yet."
+            )
 
         return cls(
             user_id=session.user.id,

@@ -296,33 +296,39 @@ async def decode_nested_access_token(token: str) -> Session:
         )
         raise AuthenticationTokenNotYetValidException()
     except JWTMissingClaim as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a token with missing claims. Raising authentication token exception."
+        logger.warning(
+            "Attempt to use a token with missing claims. Raising authentication token exception.",
+            exc_info=e,
         )
         raise AuthenticationTokenException()
     except JWTInvalidClaimValue as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a token with invalid claims. Raising authentication token exception."
+        logger.warning(
+            "Attempt to use a token with invalid claims. Raising authentication token exception.",
+            exc_info=e,
         )
         raise AuthenticationTokenException()
     except JWTInvalidClaimFormat as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a token with invalid claim format. Raising token authentication exception."
+        logger.warning(
+            "Attempt to use a token with invalid claim format. Raising token authentication exception.",
+            exc_info=e,
         )
         raise AuthenticationTokenException()
     except InvalidJWSSignature as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a token with an invalid signature. Raising token authentication exception."
+        logger.warning(
+            "Attempt to use a token with an invalid signature. Raising token authentication exception.",
+            exc_info=e,
         )
         raise AuthenticationTokenException()
     except (InvalidJWEData, InvalidJWSObject) as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a token with an invalid format. Raising token authentication exception."
+        logger.warning(
+            "Attempt to use a token with an invalid format. Raising token authentication exception.",
+            exc_info=e,
         )
-        raise AuthenticationTokenException()
+        raise AuthenticationTokenMalformedError()
     except json.JSONDecodeError as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a token with an invalid format. Raising token authentication exception."
+        logger.warning(
+            "Attempt to use a token with an invalid format. Raising token authentication exception.",
+            exc_info=e,
         )
         raise AuthenticationTokenMalformedError()
     except JWException as e:
@@ -382,33 +388,39 @@ async def decode_nested_refresh_token(token: str) -> Session:
         )
         raise RefreshTokenNotYetValidException()
     except JWTMissingClaim as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a refresh token with missing claims. Raising authentication refresh token exception."
+        logger.warning(
+            "Attempt to use a refresh token with missing claims. Raising authentication refresh token exception.",
+            exc_info=e,
         )
         raise RefreshTokenException()
     except JWTInvalidClaimValue as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a refresh token with invalid claims. Raising authentication refresh token exception."
+        logger.warning(
+            "Attempt to use a refresh token with invalid claims. Raising authentication refresh token exception.",
+            exc_info=e,
         )
         raise RefreshTokenException()
     except JWTInvalidClaimFormat as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a refresh token with invalid claim format. Raising refresh token authentication exception."
+        logger.warning(
+            "Attempt to use a refresh token with invalid claim format. Raising refresh token authentication exception.",
+            exc_info=e,
         )
         raise RefreshTokenException()
     except InvalidJWSSignature as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a refresh token with an invalid signature. Raising refresh token authentication exception."
+        logger.warning(
+            "Attempt to use a refresh token with an invalid signature. Raising refresh token authentication exception.",
+            exc_info=e,
         )
         raise RefreshTokenException()
     except (InvalidJWEData, InvalidJWSObject) as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a refresh token with an invalid format. Raising refresh token authentication exception."
+        logger.warning(
+            "Attempt to use a refresh token with an invalid format. Raising refresh token authentication exception.",
+            exc_info=e,
         )
         raise RefreshTokenException()
     except json.JSONDecodeError as e:
-        logger.opt(exception=e).warning(
-            "Attempt to use a refresh token with an invalid format. Raising refresh token authentication exception."
+        logger.warning(
+            "Attempt to use a refresh token with an invalid format. Raising refresh token authentication exception.",
+            exc_info=e,
         )
         raise RefreshTokenMalformedError()
     except JWException as e:
