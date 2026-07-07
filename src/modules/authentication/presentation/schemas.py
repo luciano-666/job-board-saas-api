@@ -5,10 +5,9 @@ from fastapi.security import OAuth2PasswordRequestFormStrict
 from pydantic import BaseModel, ConfigDict
 
 from src.modules.shared.application.enums import ResponseMessages
-from src.modules.authentication.domain.entities import (
-    SessionRequest,
-    SessionLookup,
-)
+from src.modules.authentication.domain.entities import SessionLookup
+from src.modules.authentication.domain.value_objects import Credentials
+from src.modules.authentication.domain.entities import RequestMetadata
 
 
 # REQUEST
@@ -19,11 +18,13 @@ class LoginRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     @staticmethod
-    def to_entity(
-        form_data: OAuth2PasswordRequestFormStrict, request: Request
-    ) -> "SessionRequest":
-        from src.modules.authentication.domain.entities import SessionRequest
-        from src.modules.user.domain.entities import User
+    def to_credentials(form_data: OAuth2PasswordRequestFormStrict) -> Credentials:
+        return Credentials(email=form_data.username, password=form_data.password)
+
+    @staticmethod
+    def extract_metadata(request: Request) -> "RequestMetadata":
+        """Build request metadata used to construct SessionRequest at login."""
+        from src.modules.authentication.presentation.schemas import RequestMetadata
 
         ip_address = request.headers.get("x-forwarded-for") or request.headers.get(
             "x-real-ip"
@@ -36,8 +37,7 @@ class LoginRequest(BaseModel):
                 )
             ip_address = request.client.host
 
-        return SessionRequest(
-            user=User(email=form_data.username, password=form_data.password),
+        return RequestMetadata(
             ip_address=ip_address,
             user_agent=request.headers.get("user-agent", ""),
             device=getattr(request.state, "device_id", ""),

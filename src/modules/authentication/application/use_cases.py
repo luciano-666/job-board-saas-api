@@ -11,10 +11,12 @@ from src.core.config import settings
 from src.modules.authentication.application.interfaces import IAuthenticationRepository
 from src.modules.authentication.domain.entities import (
     AccessToken,
+    AuthenticatedUser,
     RefreshToken,
     Session,
     SessionRequest,
 )
+from src.modules.authentication.domain.value_objects import Credentials
 from src.modules.authentication.presentation.exceptions import (
     AuthenticationException,
     SessionInvalidCredentialsException,
@@ -26,6 +28,7 @@ from src.modules.shared.presentation.exceptions import (
 )
 from src.modules.user.domain.entities import User
 from src.modules.shared.application.interfaces import ISharedUseCases
+from src.modules.authentication.domain.entities import RequestMetadata
 
 logger = structlog.get_logger(__name__)
 
@@ -69,42 +72,47 @@ class AuthenticationUseCases:
     # CREATE — login
     # ------------------------------------------------------------------
 
-    async def login(self, request: SessionRequest) -> Session:
+    async def login(
+        self, credentials: Credentials, metadata: RequestMetadata
+    ) -> Session:
         """Authenticate a user and return a fully populated Session.
 
-        If a session already exists for the same user / device / agent,
+        If a session already exists for the same user, device, and agent,
         it is refreshed in place; otherwise a new session is created.
         """
         try:
             logger.debug(
                 "Initializing login use case.",
-                email=str(request.user.email),
-                device=request.device,
+                email=credentials.email,
+                device=metadata.device,
             )
 
-            db_user: User = await self.shared_service.get_user_by_email(request.user)
-
-            if not request.user.password or not db_user.hashed_password:
-                raise SessionInvalidCredentialsException()
+            # get_user_by_email now accepts a plain string, so this module
+            # never needs to construct a full User entity to query it.
+            db_user: User = await self.shared_service.get_user_by_email(
+                credentials.email
+            )
 
             if not await verify_password(
-                request.user.password, db_user.hashed_password
+                credentials.password, db_user.hashed_password or ""
             ):
                 logger.info("Password mismatch — raising invalid credentials.")
                 raise SessionInvalidCredentialsException()
 
-            # Build a temporary Session-like object the repository can query by.
-            # We only need user / device / user_agent for the lookup.
+            authenticated_user = AuthenticatedUser(
+                id=db_user.id, email=str(db_user.email), role=db_user.role
+            )
+
             lookup = SessionRequest(
-                user=db_user,
-                ip_address=request.ip_address,
-                user_agent=request.user_agent,
-                device=request.device,
-                location=request.location,
-                accept_language=request.accept_language,
-                accept_encoding=request.accept_encoding,
-                origin=request.origin,
-                referer=request.referer,
+                user=authenticated_user,
+                ip_address=metadata.ip_address,
+                user_agent=metadata.user_agent,
+                device=metadata.device,
+                location=metadata.location,
+                accept_language=metadata.accept_language,
+                accept_encoding=metadata.accept_encoding,
+                origin=metadata.origin,
+                referer=metadata.referer,
             )
 
             refresh_expires_at = datetime.now(UTC) + timedelta(
@@ -118,8 +126,8 @@ class AuthenticationUseCases:
             if existing is not None:
                 logger.debug(
                     "Existing session found — refreshing tokens.",
-                    email=str(db_user.email),
-                    device=request.device,
+                    email=credentials.email,
+                    device=metadata.device,
                 )
                 existing.touch()
 
@@ -141,36 +149,34 @@ class AuthenticationUseCases:
             else:
                 logger.debug(
                     "No existing session — creating new session.",
-                    email=str(db_user.email),
-                    device=request.device,
+                    email=credentials.email,
+                    device=metadata.device,
                 )
                 refresh_token = self._build_refresh_token(refresh_expires_at)
                 now = datetime.now(UTC)
 
-                # The repository will populate id after persist; we use a
-                # temporary sentinel UUID that gets replaced on create().
                 from uuid import uuid4
 
                 new_session = Session(
-                    id=uuid4(),  # replaced by DB after create()
-                    user=db_user,
+                    id=uuid4(),  # replaced by the repository after create()
+                    user=authenticated_user,
                     refresh_token=refresh_token,
-                    ip_address=request.ip_address,
-                    user_agent=request.user_agent,
-                    device=request.device,
+                    ip_address=metadata.ip_address,
+                    user_agent=metadata.user_agent,
+                    device=metadata.device,
                     created_at=now,
                     last_updated_at=now,
-                    location=request.location,
-                    accept_language=request.accept_language,
-                    accept_encoding=request.accept_encoding,
-                    origin=request.origin,
-                    referer=request.referer,
+                    location=metadata.location,
+                    accept_language=metadata.accept_language,
+                    accept_encoding=metadata.accept_encoding,
+                    origin=metadata.origin,
+                    referer=metadata.referer,
                 )
 
                 session = await self._issue_tokens(new_session)
                 await self.repository.create(session)
 
-            logger.debug("Login successful.", email=str(db_user.email))
+            logger.debug("Login successful.", email=credentials.email)
             return session
 
         except StandardException:

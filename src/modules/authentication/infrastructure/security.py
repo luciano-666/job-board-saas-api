@@ -37,7 +37,7 @@ from src.modules.authentication.presentation.exceptions import (
 )
 from src.modules.authentication.domain.value_objects import Claims, RefreshClaims
 from src.modules.shared.application.enums import Role
-from src.modules.user.domain.entities import User
+from src.modules.authentication.domain.entities import AuthenticatedUser
 from src.core.config import settings
 
 logger = structlog.get_logger(__name__)
@@ -203,7 +203,9 @@ def from_access_claims(claims: dict) -> Session:
     """
     access_claims = Claims.from_dict(claims)
     role = Role(access_claims.scope)
-    user = User(id=access_claims.sub, email=access_claims.grant_id, role=role)
+    user = AuthenticatedUser(
+        id=access_claims.sub, email=access_claims.grant_id, role=role
+    )
     access_token = AccessToken(
         expires_at=datetime.fromtimestamp(access_claims.exp, tz=UTC),
         permission=role,
@@ -229,7 +231,9 @@ def from_refresh_claims(claims: dict) -> Session:
     """Build a minimal Session shell from decoded refresh token claims."""
     refresh_claims = RefreshClaims.from_dict(claims)
     role = Role(refresh_claims.scope)
-    user = User(id=refresh_claims.sub, email=refresh_claims.grant_id, role=role)
+    user = AuthenticatedUser(
+        id=refresh_claims.sub, email=refresh_claims.grant_id, role=role
+    )
     access_token = AccessToken(
         expires_at=datetime.fromtimestamp(refresh_claims.exp, tz=UTC),
         permission=role,

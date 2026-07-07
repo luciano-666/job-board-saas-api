@@ -66,14 +66,15 @@ class SharedUseCases:
                 raise UserException()
             return None
 
-    async def get_user_by_email(self, user: User) -> User:
-        logger.debug(f"Initializing get user by email use case for user: {user.email}.")
+    async def get_user_by_email(self, email: str) -> User:
+        """Retrieve an active user by email, raising if not found."""
+        logger.debug(f"Initializing get user by email use case for user: {email}.")
 
-        db_user = await self.user_repository.get_by_email(user.email)
+        db_user = await self.user_repository.get_by_email(email)
 
         if db_user is None:
-            logger.info(f"User with email {user.email} not found. Raising exception.")
-            raise UserEmailNotFoundException(email=user.email.__str__())
+            logger.info(f"User with email {email} not found. Raising exception.")
+            raise UserEmailNotFoundException(email=email.__str__())
 
-        logger.debug(f"User {user.email} retrieved from database successfully.")
+        logger.debug(f"User {email} retrieved from database successfully.")
         return db_user

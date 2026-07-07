@@ -131,3 +131,11 @@ class RefreshClaims(BaseClaims):
             grant_id=data["grant_id"],
             scope=data["scope"],
         )
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Credentials:
+    """Raw login credentials, decoupled from the User module's domain model."""
+
+    email: str
+    password: str

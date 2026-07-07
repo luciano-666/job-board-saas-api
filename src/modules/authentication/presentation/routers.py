@@ -132,8 +132,10 @@ async def login(
     use_case: AuthenticationUseCases = Depends(get_authentication_use_cases),
 ) -> LoginResponse:
     try:
-        login_request = LoginRequest.to_entity(form_data, request)
-        session = await use_case.login(login_request)
+        credentials = LoginRequest.to_credentials(form_data)
+        metadata = LoginRequest.extract_metadata(request)
+
+        session = await use_case.login(credentials, metadata)
 
         await set_cookies(response, session)
 

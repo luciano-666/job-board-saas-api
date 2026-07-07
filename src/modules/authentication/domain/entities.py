@@ -7,7 +7,34 @@ from uuid import UUID
 from src.modules.authentication.application.enums import TokenType
 from src.modules.authentication.domain.value_objects import Claims, RefreshClaims
 from src.modules.shared.application.enums import Role
-from src.modules.user.domain.entities import User
+
+
+@dataclass(kw_only=True, slots=True)
+class RequestMetadata:
+    """Raw request context collected before authentication resolves a user."""
+
+    ip_address: str
+    user_agent: str
+    device: str
+    location: str | None = None
+    accept_language: str | None = None
+    accept_encoding: str | None = None
+    origin: str | None = None
+    referer: str | None = None
+
+
+@dataclass(kw_only=True, slots=True)
+class AuthenticatedUser:
+    """Minimal identity snapshot needed by the authentication domain.
+
+    Deliberately does not depend on user.domain.entities.User — construction
+    from a full User entity happens in the application layer, which is
+    already allowed to know about the User module.
+    """
+
+    id: UUID
+    email: str
+    role: Role
 
 
 # ---------------------------------------------------------------------------
@@ -172,7 +199,7 @@ class SessionRequest:
     so the use case can authenticate against the DB record.
     """
 
-    user: User
+    user: AuthenticatedUser
     ip_address: str
     user_agent: str
     device: str
@@ -216,7 +243,7 @@ class Session:
     """
 
     id: UUID
-    user: User
+    user: AuthenticatedUser
     refresh_token: RefreshToken
     ip_address: str
     user_agent: str
