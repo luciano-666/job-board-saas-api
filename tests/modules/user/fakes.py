@@ -36,6 +36,12 @@ class FakeUserRepository:
         target = str(email).lower()
         return any(str(u.email).lower() == target for u in self._store.values())
 
+    async def update(self, user: User) -> None:
+        self._store[user.id] = user
+
+    async def get_by_id_any_status(self, id: UUID) -> Optional[User]:
+        return self._store.get(id)
+
 
 class FakeSharedUseCases:
     """Minimal SharedUseCases stand-in for UserUseCases tests."""
@@ -46,10 +52,10 @@ class FakeSharedUseCases:
     async def get_user_by_id(self, id: UUID) -> Optional[User]:
         return await self._repo.get_by_id(id)
 
-    async def get_user_by_email(self, user: User) -> User:
+    async def get_user_by_email(self, email: str) -> User:
         from src.modules.user.presentation.exceptions import UserEmailNotFoundException
 
-        result = await self._repo.get_by_email(user.email)
+        result = await self._repo.get_by_email(email)
         if result is None:
-            raise UserEmailNotFoundException(email=str(user.email))
+            raise UserEmailNotFoundException(email=email)
         return result

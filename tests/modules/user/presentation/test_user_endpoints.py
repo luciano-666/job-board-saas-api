@@ -55,3 +55,24 @@ async def test_me_with_invalid_access_token_returns_401(client):
     response = await client.get("/api/v1/user/me/")
 
     assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+# ---------------------------------------------------------------------------
+# UPDATE
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_suspend_without_admin_auth_returns_401(client):
+    response = await client.patch(
+        "/api/v1/user/00000000-0000-0000-0000-000000000000/suspend/"
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.anyio
+async def test_activate_without_admin_auth_returns_401(client):
+    response = await client.patch(
+        "/api/v1/user/00000000-0000-0000-0000-000000000000/activate/"
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED

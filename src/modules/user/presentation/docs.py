@@ -9,7 +9,12 @@ from src.modules.authentication.presentation.dependencies import (
 from src.modules.shared.application.enums import ResponseMessages, Role
 from src.modules.shared.presentation.schemas import StandardResponse
 from src.modules.user.application.enums import Gender
-from src.modules.user.presentation.schemas import CreateResponse, MeResponse
+from src.modules.user.presentation.schemas import (
+    CreateResponse,
+    MeResponse,
+    SuspendResponse,
+    ActivateResponse,
+)
 
 # MODULE DOCS
 router_docs = {
@@ -297,4 +302,23 @@ me_docs = {
             },
         }
     },
+}
+suspend_docs = {
+    "summary": "Endpoint for admin to suspend a user account.",
+    "description": "Suspend (deactivate) a user account. Requires admin authentication.",
+    "dependencies": [Security(authenticate_admin)],
+    "status_code": HTTPStatus.OK,
+    "response_model": SuspendResponse,
+    "include_in_schema": True,
+    "responses": {},
+}
+
+activate_docs = {
+    "summary": "Endpoint for admin to activate a user account.",
+    "description": "Activate (reinstate) a suspended user account. Requires admin authentication.",
+    "dependencies": [Security(authenticate_admin)],
+    "status_code": HTTPStatus.OK,
+    "response_model": ActivateResponse,
+    "include_in_schema": True,
+    "responses": {},
 }

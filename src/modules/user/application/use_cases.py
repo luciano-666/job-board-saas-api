@@ -1,4 +1,5 @@
 import structlog
+from uuid import UUID
 
 from src.modules.user.application.interfaces import IUserRepository
 from src.modules.user.domain.entities import User
@@ -51,6 +52,53 @@ class UserUseCases:
             logger.error(
                 "An unexpected error occurred during the create user use case.",
                 exc_info=e,
+            )
+            raise UserException()
+
+    # UPDATE
+    async def suspend(self, id: UUID) -> User:
+        try:
+            logger.debug(f"Initializing suspend user use case for id: {id}.")
+
+            user = await self.repository.get_by_id_any_status(id)
+            if user is None:
+                raise UserEmailNotFoundException(email=str(id))
+
+            user.suspend()
+            await self.repository.update(user)
+
+            logger.debug(f"User {id} suspended successfully.")
+            return user
+        except StandardException:
+            raise
+        except DomainError as e:
+            raise DomainException(e)
+        except Exception as e:
+            logger.error(
+                "An error occurred during the suspend user use case.", exc_info=e
+            )
+            raise UserException()
+
+    async def activate(self, id: UUID) -> User:
+        try:
+            logger.debug(f"Initializing activate user use case for id: {id}.")
+
+            user = await self.repository.get_by_id_any_status(id)
+            if user is None:
+                raise UserEmailNotFoundException(email=str(id))
+
+            user.activate()
+            await self.repository.update(user)
+
+            logger.debug(f"User {id} activated successfully.")
+            return user
+        except StandardException:
+            raise
+        except DomainError as e:
+            raise DomainException(e)
+        except Exception as e:
+            logger.error(
+                "An error occurred during the activate user use case.", exc_info=e
             )
             raise UserException()
 

@@ -55,3 +55,13 @@ class User:
         )
         if age < 18:
             raise DomainError("Users must be at least 18 years old.")
+
+    def suspend(self) -> None:
+        if not self.is_active:
+            raise DomainError("User is already suspended.")
+        self.is_active = False
+
+    def activate(self) -> None:
+        if self.is_active:
+            raise DomainError("User is already active.")
+        self.is_active = True

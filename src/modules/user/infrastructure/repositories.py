@@ -39,6 +39,23 @@ class SqlAlchemyUserRepository(IUserRepository):
             logger.error("An error occurred in the create user repository.", exc_info=e)
             raise UserException()
 
+    # UPDATE
+    async def update(self, user: User) -> None:
+        try:
+            logger.info(f"Updating user {user.id} in database.")
+
+            db_user = UserModel.from_entity(user)
+            await self.session.merge(db_user)
+            await self.session.flush()
+
+            logger.info(f"User {user.id} updated successfully in database.")
+            return None
+        except StandardException:
+            raise
+        except Exception as e:
+            logger.error("An error occurred in the update user repository.", exc_info=e)
+            raise UserException()
+
     # READ
     async def exists_by_email(self, email: Email | str) -> bool:
         try:
@@ -123,5 +140,24 @@ class SqlAlchemyUserRepository(IUserRepository):
             logger.error(
                 "Unexpected error during the get by email of a user in the database.",
                 exc_info=e,
+            )
+            raise UserException()
+
+    async def get_by_id_any_status(self, id: UUID) -> Optional[User]:
+        try:
+            logger.info(f"Retrieving user with id {id} from database (any status).")
+
+            statement = select(UserModel).where(UserModel.id == id)
+            result = await self.session.execute(statement)
+            user_model: UserModel | None = result.scalar_one_or_none()
+
+            if user_model is None:
+                return None
+            return UserModel.to_entity(user_model)
+        except StandardException:
+            raise
+        except Exception as e:
+            logger.error(
+                "Unexpected error during get_by_id_any_status repository.", exc_info=e
             )
             raise UserException()

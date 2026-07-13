@@ -16,7 +16,7 @@ from src.modules.user.presentation.exceptions import (
     UserEmailNotFoundException,
 )
 from tests.modules.user.fakes import FakeUserRepository, FakeSharedUseCases
-from tests.utils import random_email
+from tests.utils import random_email, random_id
 
 
 # ---------------------------------------------------------------------------
@@ -229,3 +229,73 @@ def test_phone_normalises_with_plus_prefix():
 
     phone = Phone("5554726642")
     assert str(phone).startswith("+")
+
+
+# ---------------------------------------------------------------------------
+# domain — user suspend / activate methods
+# ---------------------------------------------------------------------------
+
+
+def test_user_suspend_sets_is_active_false():
+    user = make_user()
+    user.suspend()
+    assert user.is_active is False
+
+
+def test_user_activate_sets_is_active_true():
+    user = make_user()
+    user.is_active = False
+    user.activate()
+    assert user.is_active is True
+
+
+def test_user_suspend_raises_when_already_suspended():
+    from src.modules.shared.domain.entities import DomainError
+
+    user = make_user()
+    user.suspend()
+
+    with pytest.raises(DomainError, match="already suspended"):
+        user.suspend()
+
+
+def test_user_activate_raises_when_already_active():
+    from src.modules.shared.domain.entities import DomainError
+
+    user = make_user()
+
+    with pytest.raises(DomainError, match="already active"):
+        user.activate()
+
+
+@pytest.mark.anyio
+async def test_suspend_sets_user_inactive():
+    existing = make_user()
+    use_cases, repo = make_use_cases(existing=[existing])
+
+    await use_cases.suspend(existing.id)
+
+    stored = await repo.get_by_id_any_status(existing.id)
+    assert stored is not None
+    assert stored.is_active is False
+
+
+@pytest.mark.anyio
+async def test_suspend_raises_not_found_when_user_missing():
+    use_cases, _ = make_use_cases()
+
+    with pytest.raises(UserEmailNotFoundException):
+        await use_cases.suspend(random_id())
+
+
+@pytest.mark.anyio
+async def test_activate_sets_user_active():
+    existing = make_user()
+    existing.is_active = False
+    use_cases, repo = make_use_cases(existing=[existing])
+
+    await use_cases.activate(existing.id)
+
+    stored = await repo.get_by_id_any_status(existing.id)
+    assert stored is not None
+    assert stored.is_active is True

@@ -410,3 +410,23 @@ class MeResponse(BaseModel):
             role=user.role,
             created_at=user.created_at,
         )
+
+
+class SuspendResponse(BaseModel):
+    message: str = ResponseMessages.UPDATED.value
+
+    model_config = ConfigDict(
+        title="SuspendResponse",
+        extra="forbid",
+        json_schema_extra={"example": {"message": ResponseMessages.UPDATED.value}},
+    )
+
+
+class ActivateResponse(BaseModel):
+    message: str = ResponseMessages.UPDATED.value
+
+    model_config = ConfigDict(
+        title="ActivateResponse",
+        extra="forbid",
+        json_schema_extra={"example": {"message": ResponseMessages.UPDATED.value}},
+    )

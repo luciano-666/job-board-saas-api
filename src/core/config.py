@@ -203,6 +203,10 @@ class Settings(BaseSettings):
             {"endpoint": "/api/v1/alembic-version", "method": "GET"},
             {"endpoint": "/api/v1/user/", "method": "POST"},
             {"endpoint": "/api/v1/user", "method": "POST"},
+            {"endpoint": "/api/v1/user/{user_id}/suspend/", "method": "PATCH"},
+            {"endpoint": "/api/v1/user/{user_id}/suspend", "method": "PATCH"},
+            {"endpoint": "/api/v1/user/{user_id}/activate/", "method": "PATCH"},
+            {"endpoint": "/api/v1/user/{user_id}/activate", "method": "PATCH"},
         ]
 
     @computed_field

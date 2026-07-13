@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 import structlog
@@ -15,12 +16,20 @@ from src.modules.shared.presentation.exceptions import (
 from src.modules.user.application.use_cases import UserUseCases
 from src.modules.user.domain.entities import User
 from src.modules.user.presentation.dependencies import get_user_use_cases
-from src.modules.user.presentation.docs import router_docs, create_docs, me_docs
+from src.modules.user.presentation.docs import (
+    router_docs,
+    create_docs,
+    me_docs,
+    suspend_docs,
+    activate_docs,
+)
 from src.modules.user.presentation.exceptions import UserException
 from src.modules.user.presentation.schemas import (
     CreateRequest,
     CreateResponse,
     MeResponse,
+    SuspendResponse,
+    ActivateResponse,
 )
 
 logger = structlog.get_logger(__name__)
@@ -65,4 +74,42 @@ async def me(
         raise DomainException(e)
     except Exception as e:
         logger.error("An error occurred in the me endpoint.", exc_info=e)
+        raise UserException()
+
+
+@router.patch("/{user_id}/suspend/", **suspend_docs)
+@router.patch("/{user_id}/suspend", include_in_schema=False)
+async def suspend(
+    user_id: UUID,
+    _: Annotated[None, Depends(authenticate_admin)],
+    use_case: UserUseCases = Depends(get_user_use_cases),
+) -> SuspendResponse:
+    try:
+        await use_case.suspend(user_id)
+        return SuspendResponse()
+    except StandardException:
+        raise
+    except DomainError as e:
+        raise DomainException(e)
+    except Exception as e:
+        logger.error("An error occurred in the suspend user endpoint.", exc_info=e)
+        raise UserException()
+
+
+@router.patch("/{user_id}/activate/", **activate_docs)
+@router.patch("/{user_id}/activate", include_in_schema=False)
+async def activate(
+    user_id: UUID,
+    _: Annotated[None, Depends(authenticate_admin)],
+    use_case: UserUseCases = Depends(get_user_use_cases),
+) -> ActivateResponse:
+    try:
+        await use_case.activate(user_id)
+        return ActivateResponse()
+    except StandardException:
+        raise
+    except DomainError as e:
+        raise DomainException(e)
+    except Exception as e:
+        logger.error("An error occurred in the activate endpoint.", exc_info=e)
         raise UserException()
