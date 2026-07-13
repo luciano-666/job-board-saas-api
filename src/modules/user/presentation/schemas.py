@@ -103,6 +103,16 @@ class CreateRequest(BaseModel):
         },
     )
 
+    role: Role = Field(
+        title="Role (Required)",
+        description=f"The role to assign to the created user. Must be one of the following: {', '.join([role.value for role in Role])}.",
+        examples=[Role.ADMIN.value, Role.EMPLOYER.value],
+        json_schema_extra={
+            "example": Role.ADMIN.value,
+            "writeOnly": True,
+        },
+    )
+
     @field_validator("first_name", "last_name")
     @classmethod
     def validate_name(cls, request: str) -> str:
@@ -227,6 +237,7 @@ class CreateRequest(BaseModel):
             email=Email(self.email),
             phone=Phone(self.phone) if self.phone else None,
             password=self.password,
+            role=self.role,
         )
 
 

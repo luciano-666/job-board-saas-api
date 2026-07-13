@@ -370,3 +370,39 @@ logout_docs = {
         },
     },
 }
+
+register_docs = {
+    "summary": "Endpoint to publicly register a new user.",
+    "description": (
+        "Register a new user as EMPLOYER or CANDIDATE. "
+        "ADMIN role is not permitted through this endpoint."
+    ),
+    "dependencies": [Security(no_authentication)],
+    "response_description": "The response contains only results metadata without user details.",
+    "status_code": HTTPStatus.CREATED,
+    "include_in_schema": True,
+    "responses": {
+        201: {
+            "description": "Successful Response",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "User Registered Successfully": {
+                            "summary": "User Registered Successfully",
+                            "value": {
+                                "code": 201,
+                                "method": "POST",
+                                "path": "/api/v1/authentication/register",
+                                "timestamp": "2025-01-15T10:30:00Z",
+                                "details": {
+                                    "message": ResponseMessages.CREATED.value,
+                                    "data": {},
+                                },
+                            },
+                        },
+                    }
+                }
+            },
+        },
+    },
+}

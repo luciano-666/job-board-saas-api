@@ -4,7 +4,7 @@ from fastapi import Security
 
 from src.modules.authentication.presentation.dependencies import (
     authenticate_user,
-    no_authentication,
+    authenticate_admin,
 )
 from src.modules.shared.application.enums import ResponseMessages, Role
 from src.modules.shared.presentation.schemas import StandardResponse
@@ -219,9 +219,9 @@ router_docs = {
 
 # ENDPOINT DOCS
 create_docs = {
-    "summary": "Endpoint to create a new user.",
-    "description": "Create a new user in the system with the provided details.",
-    "dependencies": [Security(no_authentication)],
+    "summary": "Endpoint for admin-only user creation.",
+    "description": "Create a new user of any role (including ADMIN). Requires admin authentication.",
+    "dependencies": [Security(authenticate_admin)],
     "response_description": "The response contains only results metadata without user details.",
     "status_code": HTTPStatus.CREATED,
     "response_model": CreateResponse,

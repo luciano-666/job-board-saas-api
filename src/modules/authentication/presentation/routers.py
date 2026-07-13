@@ -21,6 +21,7 @@ from src.modules.authentication.presentation.docs import (
     login_docs,
     refresh_docs,
     logout_docs,
+    register_docs,
 )
 from src.modules.authentication.presentation.exceptions import AuthenticationException
 from src.modules.authentication.presentation.schemas import (
@@ -28,6 +29,7 @@ from src.modules.authentication.presentation.schemas import (
     LoginResponse,
     RefreshResponse,
     LogoutResponse,
+    RegisterRequest,
 )
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
@@ -35,6 +37,10 @@ from src.modules.shared.presentation.exceptions import (
     DomainException,
 )
 from src.modules.user.presentation.exceptions import CookieManagementException
+from src.modules.user.application.use_cases import UserUseCases
+from src.modules.user.presentation.dependencies import get_user_use_cases
+from src.modules.user.presentation.schemas import CreateResponse
+from src.modules.user.presentation.exceptions import UserException
 
 logger = structlog.get_logger(__name__)
 
@@ -192,3 +198,24 @@ async def logout(
     except Exception as e:
         logger.error("An error occurred in the logout endpoint.", exc_info=e)
         raise AuthenticationException()
+
+
+# CREATE — public registration
+@router.post("/register/", **register_docs)
+@router.post("/register", include_in_schema=False)
+async def register(
+    payload: RegisterRequest,
+    _: Annotated[None, Depends(no_authentication)],
+    use_case: UserUseCases = Depends(get_user_use_cases),
+) -> CreateResponse:
+    try:
+        user = payload.to_entity()
+        await use_case.create(user)
+        return CreateResponse()
+    except StandardException:
+        raise
+    except DomainError as e:
+        raise DomainException(e)
+    except Exception as e:
+        logger.error("An error occurred in the register endpoint.", exc_info=e)
+        raise UserException()

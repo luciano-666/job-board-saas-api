@@ -35,6 +35,7 @@ from src.modules.authentication.infrastructure.security import (
     decode_nested_refresh_token,
 )
 from src.modules.shared.application.enums import Role
+# from src.modules.shared.application.interfaces import ISharedUseCases
 
 logger = structlog.get_logger(__name__)
 
@@ -86,6 +87,7 @@ async def no_authentication(request: Request) -> None:
 async def authenticate_user(
     request: Request,
     repository: IAuthenticationRepository = Depends(get_authentication_repository),
+    shared_service: SharedUseCases = Depends(get_shared_use_cases),
 ) -> User:
     try:
         logger.debug(
@@ -135,7 +137,13 @@ async def authenticate_user(
             raise UserHasNotPermissionException()
 
         logger.debug(f"User '{session.user.email}' authenticated successfully.")
-        return session.user
+        user: User | None = await shared_service.get_user_by_id(session.user.id)
+        if user is None:
+            logger.info(
+                f"User with id '{session.user.id}' not found during authentication. Raising exception."
+            )
+            raise AuthenticationTokenInvalidException()
+        return user
     except StandardException:
         raise
     except Exception as e:
@@ -148,6 +156,7 @@ async def authenticate_user(
 async def authenticate_manager(
     request: Request,
     repository: IAuthenticationRepository = Depends(get_authentication_repository),
+    shared_service: SharedUseCases = Depends(get_shared_use_cases),
 ) -> User:
     try:
         logger.debug(
@@ -205,7 +214,14 @@ async def authenticate_manager(
             raise UserHasNotPermissionException()
 
         logger.debug(f"Manager '{session.user.email}' authenticated successfully.")
-        return session.user
+        user: User | None = await shared_service.get_user_by_id(session.user.id)
+        if user is None:
+            logger.info(
+                f"User with id '{session.user.id}' not found during authentication. Raising exception."
+            )
+            raise AuthenticationTokenInvalidException()
+
+        return user
     except StandardException:
         raise
     except Exception as e:
@@ -218,6 +234,7 @@ async def authenticate_manager(
 async def authenticate_admin(
     request: Request,
     repository: IAuthenticationRepository = Depends(get_authentication_repository),
+    shared_service: SharedUseCases = Depends(get_shared_use_cases),
 ) -> User:
     try:
         logger.debug(
@@ -275,7 +292,14 @@ async def authenticate_admin(
             raise UserHasNotPermissionException()
 
         logger.debug(f"Admin '{session.user.email}' authenticated successfully.")
-        return session.user
+        user: User | None = await shared_service.get_user_by_id(session.user.id)
+        if user is None:
+            logger.info(
+                f"User with id '{session.user.id}' not found during authentication. Raising exception."
+            )
+            raise AuthenticationTokenInvalidException()
+
+        return user
     except StandardException:
         raise
     except Exception as e:

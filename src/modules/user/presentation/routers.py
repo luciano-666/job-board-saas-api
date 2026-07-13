@@ -5,7 +5,7 @@ import structlog
 
 from src.modules.authentication.presentation.dependencies import (
     authenticate_user,
-    no_authentication,
+    authenticate_admin,
 )
 from src.modules.shared.presentation.exceptions import (
     StandardException,
@@ -28,12 +28,12 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(**router_docs)
 
 
-# CREATE
+# CREATE — admin only
 @router.post("/", **create_docs)
 @router.post("", include_in_schema=False)
 async def create(
     payload: CreateRequest,
-    _: Annotated[None, Depends(no_authentication)],
+    _: Annotated[None, Depends(authenticate_admin)],
     use_case: UserUseCases = Depends(get_user_use_cases),
 ) -> CreateResponse:
     try:

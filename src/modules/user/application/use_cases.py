@@ -61,7 +61,7 @@ class UserUseCases:
                 f"Initializing get user use case for user: {user.email.__str__()}."
             )
 
-            db_user: User | None = await self.shared_service.get_user_by_id(user)
+            db_user: User | None = await self.shared_service.get_user_by_id(user.id)
 
             if db_user is None:
                 logger.info(

@@ -1,4 +1,5 @@
 import structlog
+from uuid import UUID
 
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
@@ -33,21 +34,17 @@ class SharedUseCases:
     def disable_exceptions(self) -> None:
         self._raise_exceptions = False
 
-    async def get_user_by_id(self, user: User) -> User | None:
+    async def get_user_by_id(self, id: UUID) -> User | None:
         try:
-            logger.debug(
-                f"Initializing get user by email use case for user: {user.email}."
-            )
+            logger.debug(f"Initializing get user by id use case for id: {id}.")
 
-            db_user = await self.user_repository.get_by_id(user.id)
+            db_user = await self.user_repository.get_by_id(id)
 
             if db_user is None and self._raise_exceptions:
-                logger.info(
-                    f"User with email {user.email} not found. Raising exception."
-                )
-                raise UserEmailNotFoundException(email=user.email.__str__())
+                logger.info(f"User with id {id} not found. Raising exception.")
+                raise UserEmailNotFoundException(email=str(id))
 
-            logger.debug(f"User {user.email} retrieved from database successfully.")
+            logger.debug(f"User {id} retrieved from database successfully.")
             return db_user
         except StandardException:
             if self._raise_exceptions:
@@ -59,7 +56,7 @@ class SharedUseCases:
             return None
         except Exception as e:
             logger.error(
-                "An unexpected error occurred during the get user by email use case.",
+                "An unexpected error occurred during the get user by id use case.",
                 exc_info=e,
             )
             if self._raise_exceptions:

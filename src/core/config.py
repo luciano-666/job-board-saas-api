@@ -163,15 +163,14 @@ class Settings(BaseSettings):
             {"endpoint": "/api/v1/authentication/login", "method": "POST"},
             {"endpoint": "/api/v1/authentication/logout/", "method": "DELETE"},
             {"endpoint": "/api/v1/authentication/logout", "method": "DELETE"},
+            {"endpoint": "/api/v1/authentication/register/", "method": "POST"},
+            {"endpoint": "/api/v1/authentication/register", "method": "POST"},
             # EXAMPLE
             {"endpoint": "/api/v1/example/", "method": "POST"},
             {"endpoint": "/api/v1/example", "method": "POST"},
             # HEALTH
             {"endpoint": "/health/", "method": "GET"},
             {"endpoint": "/health", "method": "GET"},
-            # USER
-            {"endpoint": "/api/v1/user/", "method": "POST"},
-            {"endpoint": "/api/v1/user", "method": "POST"},
         ]
 
     @computed_field
@@ -202,6 +201,8 @@ class Settings(BaseSettings):
             # HEALTH
             {"endpoint": "/api/v1/alembic-version/", "method": "GET"},
             {"endpoint": "/api/v1/alembic-version", "method": "GET"},
+            {"endpoint": "/api/v1/user/", "method": "POST"},
+            {"endpoint": "/api/v1/user", "method": "POST"},
         ]
 
     @computed_field

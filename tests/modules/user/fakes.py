@@ -43,8 +43,8 @@ class FakeSharedUseCases:
     def __init__(self, repository: FakeUserRepository) -> None:
         self._repo = repository
 
-    async def get_user_by_id(self, user: User) -> Optional[User]:
-        return await self._repo.get_by_id(user.id)
+    async def get_user_by_id(self, id: UUID) -> Optional[User]:
+        return await self._repo.get_by_id(id)
 
     async def get_user_by_email(self, user: User) -> User:
         from src.modules.user.presentation.exceptions import UserEmailNotFoundException

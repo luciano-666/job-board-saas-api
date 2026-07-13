@@ -98,8 +98,8 @@ class FakeSharedUseCases:
             raise UserEmailNotFoundException(email=str(user.email))
         return result
 
-    async def get_user_by_id(self, user: User) -> User | None:
+    async def get_user_by_id(self, id: UUID) -> User | None:
         return next(
-            (u for u in self._store.values() if u.id == user.id),
+            (u for u in self._store.values() if u.id == id),
             None,
         )
