@@ -6,11 +6,18 @@ from typing import Optional
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.requests import Request
 
+from src.core.redis import get_redis_client
+from redis.asyncio import Redis
+
 from src.core.database import get_async_session
-from src.modules.authentication.application.interfaces import IAuthenticationRepository
+from src.modules.authentication.application.interfaces import (
+    IAuthenticationRepository,
+    IPasswordResetRepository,
+)
 from src.modules.authentication.application.use_cases import AuthenticationUseCases
 from src.modules.authentication.infrastructure.repositories import (
     SqlAlchemySessionRepository,
+    RedisPasswordResetRepository,
 )
 from src.modules.shared.application.use_cases import SharedUseCases
 from src.modules.shared.presentation.dependencies import get_shared_use_cases
@@ -46,11 +53,22 @@ def get_authentication_repository(
     return SqlAlchemySessionRepository(session=session)
 
 
+def get_password_reset_repository(
+    redis: Redis = Depends(get_redis_client),
+) -> IPasswordResetRepository:
+    return RedisPasswordResetRepository(redis=redis)
+
+
 def get_authentication_use_cases(
     repository: IAuthenticationRepository = Depends(get_authentication_repository),
     shared_service: SharedUseCases = Depends(get_shared_use_cases),
+    reset_repository: IPasswordResetRepository = Depends(get_password_reset_repository),
 ) -> AuthenticationUseCases:
-    return AuthenticationUseCases(repository=repository, shared_service=shared_service)
+    return AuthenticationUseCases(
+        repository=repository,
+        shared_service=shared_service,
+        reset_repository=reset_repository,
+    )
 
 
 # BEARER TOKEN AUTHENTICATION

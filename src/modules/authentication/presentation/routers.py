@@ -1,6 +1,7 @@
 from typing import Annotated
+from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Request, Response, Security
 from fastapi.security import OAuth2PasswordRequestFormStrict
 import structlog
 
@@ -30,6 +31,10 @@ from src.modules.authentication.presentation.schemas import (
     RefreshResponse,
     LogoutResponse,
     RegisterRequest,
+    PasswordResetConfirmSchema,
+    PasswordResetConfirmResponse,
+    PasswordResetRequestResponse,
+    PasswordResetRequestSchema,
 )
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
@@ -219,3 +224,49 @@ async def register(
     except Exception as e:
         logger.error("An error occurred in the register endpoint.", exc_info=e)
         raise UserException()
+
+
+@router.post(
+    "/password-reset/request/",
+    status_code=HTTPStatus.OK,
+    dependencies=[Security(no_authentication)],
+)
+@router.post("/password-reset/request", include_in_schema=False)
+async def request_password_reset(
+    payload: PasswordResetRequestSchema,
+    use_case: AuthenticationUseCases = Depends(get_authentication_use_cases),
+) -> PasswordResetRequestResponse:
+    try:
+        await use_case.request_password_reset(payload.email)
+        return PasswordResetRequestResponse()
+    except StandardException:
+        raise
+    except Exception as e:
+        logger.error(
+            "An error occurred in the password reset request endpoint.", exc_info=e
+        )
+        raise AuthenticationException()
+
+
+@router.post(
+    "/password-reset/confirm/",
+    status_code=HTTPStatus.OK,
+    dependencies=[Security(no_authentication)],
+)
+@router.post("/password-reset/confirm", include_in_schema=False)
+async def confirm_password_reset(
+    payload: PasswordResetConfirmSchema,
+    use_case: AuthenticationUseCases = Depends(get_authentication_use_cases),
+) -> PasswordResetConfirmResponse:
+    try:
+        await use_case.confirm_password_reset(payload.token, payload.new_password)
+        return PasswordResetConfirmResponse()
+    except StandardException:
+        raise
+    except DomainError as e:
+        raise DomainException(e)
+    except Exception as e:
+        logger.error(
+            "An error occurred in the password reset confirm endpoint.", exc_info=e
+        )
+        raise AuthenticationException()

@@ -75,3 +75,7 @@ class SharedUseCases:
 
         logger.debug(f"User {email} retrieved from database successfully.")
         return db_user
+
+    async def update_user_password(self, user: User) -> None:
+        logger.debug(f"Updating password for user {user.id}.")
+        await self.user_repository.update(user)

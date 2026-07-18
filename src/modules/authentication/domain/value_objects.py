@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from uuid import UUID
+import secrets
 
 from src.modules.shared.domain.entities import DomainError
 
@@ -139,3 +140,14 @@ class Credentials:
 
     email: str
     password: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PasswordResetToken:
+    """Raw reset token issued to the user (sent via email, never persisted as-is)."""
+
+    value: str
+
+    @classmethod
+    def generate(cls) -> "PasswordResetToken":
+        return cls(value=secrets.token_urlsafe(32))

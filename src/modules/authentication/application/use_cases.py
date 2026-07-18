@@ -8,7 +8,10 @@ from src.modules.authentication.infrastructure.security import (
     hash_tokens,
 )
 from src.core.config import settings
-from src.modules.authentication.application.interfaces import IAuthenticationRepository
+from src.modules.authentication.application.interfaces import (
+    IAuthenticationRepository,
+    IPasswordResetRepository,
+)
 from src.modules.authentication.domain.entities import (
     AccessToken,
     AuthenticatedUser,
@@ -16,10 +19,16 @@ from src.modules.authentication.domain.entities import (
     Session,
     SessionRequest,
 )
-from src.modules.authentication.domain.value_objects import Credentials
+from src.modules.authentication.domain.value_objects import (
+    Credentials,
+    PasswordResetToken,
+)
+from src.modules.authentication.infrastructure.security import hash_reset_token
+from src.core.security import hash_password
 from src.modules.authentication.presentation.exceptions import (
     AuthenticationException,
     SessionInvalidCredentialsException,
+    PasswordResetTokenInvalidException
 )
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
@@ -27,6 +36,7 @@ from src.modules.shared.presentation.exceptions import (
     StandardException,
 )
 from src.modules.user.domain.entities import User
+from src.modules.user.presentation.exceptions import UserEmailNotFoundException
 from src.modules.shared.application.interfaces import ISharedUseCases
 from src.modules.authentication.domain.entities import RequestMetadata
 
@@ -38,9 +48,11 @@ class AuthenticationUseCases:
         self,
         repository: IAuthenticationRepository,
         shared_service: ISharedUseCases,
+        reset_repository: IPasswordResetRepository,
     ) -> None:
         self.repository = repository
         self.shared_service = shared_service
+        self.reset_repository = reset_repository
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -252,4 +264,76 @@ class AuthenticationUseCases:
             raise DomainException(e)
         except Exception as e:
             logger.error("Unexpected error during logout.", exc_info=e)
+            raise AuthenticationException()
+
+    # ------------------------------------------------------------------
+    # CREATE — request password reset
+    # ------------------------------------------------------------------
+
+    async def request_password_reset(self, email: str) -> None:
+        """Issue a reset token if the email exists. Always succeeds silently
+        to avoid leaking which emails are registered."""
+        try:
+            logger.debug("Initializing password reset request use case.", email=email)
+            try:
+                user = await self.shared_service.get_user_by_email(email)
+            except UserEmailNotFoundException:
+                logger.info("Password reset requested for unknown email.", email=email)
+                return None
+
+            raw_token = PasswordResetToken.generate()
+            hashed = await hash_reset_token(raw_token.value)
+
+            await self.reset_repository.store_reset_token(
+                hashed_token=hashed,
+                user_id=user.id,
+                ttl_seconds=settings.PASSWORD_RESET_TOKEN_EXPIRE_SECONDS,
+            )
+
+            # TODO: dispatch Celery task to send `raw_token.value` via email.
+            # Never log the raw token in production.
+            logger.info("Password reset token issued.", email=email)
+            return None
+        except StandardException:
+            raise
+        except Exception as e:
+            logger.error("Unexpected error during password reset request.", exc_info=e)
+            raise AuthenticationException()
+
+    # ------------------------------------------------------------------
+    # UPDATE — confirm password reset
+    # ------------------------------------------------------------------
+
+    async def confirm_password_reset(self, token: str, new_password: str) -> None:
+        try:
+            logger.debug("Initializing password reset confirmation use case.")
+
+            hashed = await hash_reset_token(token)
+            user_id = await self.reset_repository.get_user_id_by_reset_token(hashed)
+
+            if user_id is None:
+                raise PasswordResetTokenInvalidException()
+
+            user = await self.shared_service.get_user_by_id(user_id)
+            if user is None:
+                raise PasswordResetTokenInvalidException()
+
+            user.hashed_password = await hash_password(new_password)
+            await self.reset_repository.delete_reset_token(hashed)
+
+            # Persisting the updated password goes through the user repository,
+            # which AuthenticationUseCases does not hold directly — expose via
+            # shared_service instead (see note below).
+            await self.shared_service.update_user_password(user)
+
+            logger.debug("Password reset completed successfully.")
+            return None
+        except StandardException:
+            raise
+        except DomainError as e:
+            raise DomainException(e)
+        except Exception as e:
+            logger.error(
+                "Unexpected error during password reset confirmation.", exc_info=e
+            )
             raise AuthenticationException()

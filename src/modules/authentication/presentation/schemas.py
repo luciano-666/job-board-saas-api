@@ -302,3 +302,41 @@ class RegisterRequest(BaseModel):
             password=self.password,
             role=self.role,
         )
+
+
+class PasswordResetRequestSchema(BaseModel):
+    email: str = Field(min_length=3, max_length=254, examples=["johndoe@domain.com"])
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+
+class PasswordResetRequestResponse(BaseModel):
+    message: str = "If the email exists, a reset link has been sent."
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class PasswordResetConfirmSchema(BaseModel):
+    token: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=64)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        if not re.search(r"[A-Z]", value):
+            raise ValueError("Password must contain at least one uppercase letter.")
+        if not re.search(r"[a-z]", value):
+            raise ValueError("Password must contain at least one lowercase letter.")
+        if not re.search(r"[0-9]", value):
+            raise ValueError("Password must contain at least one digit.")
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
+            raise ValueError("Password must contain at least one special character.")
+        return value
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+
+class PasswordResetConfirmResponse(BaseModel):
+    message: str = "Password has been reset successfully."
+
+    model_config = ConfigDict(extra="forbid")

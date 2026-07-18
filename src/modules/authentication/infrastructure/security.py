@@ -474,3 +474,8 @@ async def hash_tokens(session: Session) -> Session:
     except Exception as e:
         logger.error("An error occurred during token hashing.", exc_info=e)
         raise HashingException()
+
+
+async def hash_reset_token(raw_token: str) -> str:
+    """Fingerprint a raw reset token the same way access/refresh JTIs are hashed."""
+    return await _token_fingerprint(raw_token, "password-reset")

@@ -302,3 +302,15 @@ class LogoutInvalidEndpoint(StandardException):
             message=message,
             data={"errors": errors},
         )
+
+
+class PasswordResetTokenInvalidException(StandardException):
+    def __init__(self) -> None:
+        message = ResponseMessages.UNAUTHORIZED_ERROR.value
+        errors = "Invalid or expired password reset token."
+
+        super().__init__(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            message=message,
+            data={"errors": errors},
+        )

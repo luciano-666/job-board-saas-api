@@ -1,4 +1,6 @@
 from typing import Optional
+from uuid import UUID
+from redis.asyncio import Redis
 
 import structlog
 from sqlalchemy import select
@@ -266,5 +268,54 @@ class SqlAlchemySessionRepository(IAuthenticationRepository):
         except Exception as e:
             logger.error(
                 "An error occurred in the update session repository.", exc_info=e
+            )
+            raise AuthenticationException()
+
+
+class RedisPasswordResetRepository:
+    """Stores password-reset tokens in Redis, keyed by hashed token value."""
+
+    _KEY_PREFIX = "password_reset:"
+
+    def __init__(self, redis: Redis) -> None:
+        self.redis = redis
+
+    async def store_reset_token(
+        self, hashed_token: str, user_id: UUID, ttl_seconds: int
+    ) -> None:
+        try:
+            await self.redis.set(
+                f"{self._KEY_PREFIX}{hashed_token}", str(user_id), ex=ttl_seconds
+            )
+        except Exception as e:
+            logger.error(
+                "An error occurred while storing the password reset token.",
+                exc_info=e,
+            )
+            raise AuthenticationException()
+
+    async def get_user_id_by_reset_token(self, hashed_token: str) -> UUID | None:
+        try:
+            value = await self.redis.get(f"{self._KEY_PREFIX}{hashed_token}")
+            if value is None:
+                return None
+
+            if isinstance(value, bytes):
+                value = value.decode("utf-8")
+            return UUID(value)
+        except Exception as e:
+            logger.error(
+                "An error occurred while retrieving the password reset token.",
+                exc_info=e,
+            )
+            raise AuthenticationException()
+
+    async def delete_reset_token(self, hashed_token: str) -> None:
+        try:
+            await self.redis.delete(f"{self._KEY_PREFIX}{hashed_token}")
+        except Exception as e:
+            logger.error(
+                "An error occurred while deleting the password reset token.",
+                exc_info=e,
             )
             raise AuthenticationException()

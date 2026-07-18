@@ -171,6 +171,23 @@ class Settings(BaseSettings):
             # HEALTH
             {"endpoint": "/health/", "method": "GET"},
             {"endpoint": "/health", "method": "GET"},
+            # PASSWORD RESET
+            {
+                "endpoint": "/api/v1/authentication/password-reset/request/",
+                "method": "POST",
+            },
+            {
+                "endpoint": "/api/v1/authentication/password-reset/request",
+                "method": "POST",
+            },
+            {
+                "endpoint": "/api/v1/authentication/password-reset/confirm/",
+                "method": "POST",
+            },
+            {
+                "endpoint": "/api/v1/authentication/password-reset/confirm",
+                "method": "POST",
+            },
         ]
 
     @computed_field
@@ -231,6 +248,8 @@ class Settings(BaseSettings):
                 f"The environment must be {', '.join([env.value for env in ApplicationEnvironment])} (case-sensitive). "
                 f"Please check your .env file."
             )
+
+    PASSWORD_RESET_TOKEN_EXPIRE_SECONDS: int = 900  # 15 minutes
 
 
 settings = Settings()  # type: ignore
