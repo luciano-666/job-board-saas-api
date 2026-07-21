@@ -28,7 +28,7 @@ from src.core.security import hash_password
 from src.modules.authentication.presentation.exceptions import (
     AuthenticationException,
     SessionInvalidCredentialsException,
-    PasswordResetTokenInvalidException
+    PasswordResetTokenInvalidException,
 )
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (

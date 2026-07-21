@@ -39,7 +39,7 @@ def make_use_cases(
 ) -> tuple[UserUseCases, FakeUserRepository]:
     repo = FakeUserRepository(existing)
     shared = FakeSharedUseCases(repo)
-    return UserUseCases(repository=repo, shared_service=shared), repo
+    return UserUseCases(repository=repo, shared_service=shared), repo  # ty:ignore[invalid-argument-type]
 
 
 # ---------------------------------------------------------------------------
@@ -151,7 +151,7 @@ async def test_me_raises_not_found_when_user_is_inactive():
     # to get_user_by_id and propagates whatever the shared service gives.
     # In real integration the repository filters is_active=True.
     shared = FakeSharedUseCases(repo)
-    use_cases = UserUseCases(repository=repo, shared_service=shared)
+    use_cases = UserUseCases(repository=repo, shared_service=shared)  # ty:ignore[invalid-argument-type]
 
     with pytest.raises(UserEmailNotFoundException):
         await use_cases.me(existing)
@@ -299,3 +299,70 @@ async def test_activate_sets_user_active():
     stored = await repo.get_by_id_any_status(existing.id)
     assert stored is not None
     assert stored.is_active is True
+
+
+# ---------------------------------------------------------------------------
+# update user profile
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+def test_update_profile_changes_name_and_phone():
+    user = make_user()
+    new_name = Name(first_name="Alice", last_name="Wonder")
+
+    user.update_profile(
+        name=new_name, gender=Gender.FEMALE, birthdate=user.birthdate, phone=None
+    )
+
+    assert user.name.first_name == "Alice"
+    assert user.gender == Gender.FEMALE
+    assert user.phone is None
+
+
+@pytest.mark.anyio
+def test_update_profile_rejects_underage_birthdate():
+    from src.modules.shared.domain.entities import DomainError
+
+    user = make_user()
+    today = datetime.date.today()
+    underage = today.replace(year=today.year - 17)
+
+    with pytest.raises(DomainError, match="18 years old"):
+        user.update_profile(
+            name=user.name, gender=user.gender, birthdate=underage, phone=user.phone
+        )
+
+
+@pytest.mark.anyio
+async def test_update_profile_persists_changes():
+    existing = make_user()
+    use_cases, repo = make_use_cases(existing=[existing])
+    new_name = Name(first_name="Updated", last_name="Name")
+
+    result = await use_cases.update_profile(
+        existing.id,
+        name=new_name,
+        gender=Gender.OTHER,
+        birthdate=existing.birthdate,
+        phone=None,
+    )
+
+    stored = await repo.get_by_id(existing.id)
+    assert stored is not None
+    assert stored.name.first_name == "Updated"
+    assert result.name.first_name == "Updated"
+
+
+@pytest.mark.anyio
+async def test_update_profile_raises_not_found_when_user_missing():
+    use_cases, _ = make_use_cases()
+
+    with pytest.raises(UserEmailNotFoundException):
+        await use_cases.update_profile(
+            random_id(),
+            name=Name(first_name="Ghost", last_name="User"),
+            gender=None,
+            birthdate=None,
+            phone=None,
+        )

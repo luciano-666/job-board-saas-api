@@ -1,8 +1,10 @@
 import structlog
 from uuid import UUID
+from datetime import date
 
 from src.modules.user.application.interfaces import IUserRepository
 from src.modules.user.domain.entities import User
+from src.modules.user.domain.value_objects import Name, Phone
 from src.core.security import hash_password
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
@@ -15,6 +17,7 @@ from src.modules.user.presentation.exceptions import (
     UserEmailNotFoundException,
 )
 from src.modules.shared.application.interfaces import ISharedUseCases
+from src.modules.user.application.enums import Gender
 
 logger = structlog.get_logger(__name__)
 
@@ -125,4 +128,39 @@ class UserUseCases:
             raise DomainException(e)
         except Exception as e:
             logger.error("An error occurred in the me use case.", exc_info=e)
+            raise UserException()
+
+    # ------------------------------------------------------------------
+    # UPDATE — profile user
+    # ------------------------------------------------------------------
+    async def update_profile(
+        self,
+        id: UUID,
+        *,
+        name: Name,
+        gender: Gender | None,
+        birthdate: date | None,
+        phone: Phone | None,
+    ) -> User:
+        try:
+            logger.debug(f"Initializing update profile use case for id: {id}.")
+            user = await self.repository.get_by_id(id)
+            if user is None:
+                raise UserEmailNotFoundException(email=str(id))
+
+            user.update_profile(
+                name=name, gender=gender, birthdate=birthdate, phone=phone
+            )
+            await self.repository.update(user)
+
+            logger.debug(f"Profile for user {id} updated successfully.")
+            return user
+        except StandardException:
+            raise
+        except DomainError as e:
+            raise DomainException(e)
+        except Exception as e:
+            logger.error(
+                "An error occurred during the update profile use case.", exc_info=e
+            )
             raise UserException()

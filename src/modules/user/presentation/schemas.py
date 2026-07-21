@@ -430,3 +430,97 @@ class ActivateResponse(BaseModel):
         extra="forbid",
         json_schema_extra={"example": {"message": ResponseMessages.UPDATED.value}},
     )
+
+
+class UpdateProfileRequest(BaseModel):
+    first_name: Optional[str] = Field(
+        default=None, min_length=3, max_length=100, examples=["John"]
+    )
+    last_name: Optional[str] = Field(
+        default=None, min_length=3, max_length=100, examples=["Doe"]
+    )
+    preferred_name: Optional[str] = Field(
+        default=None, max_length=100, examples=["Joe"]
+    )
+    gender: Optional[Gender] = Field(default=None, examples=[Gender.MALE.value])
+    birthdate: Optional[date] = Field(default=None, examples=["1995-01-01"])
+    phone: Optional[str] = Field(default=None, examples=["+555472664275"])
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def validate_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        if not re.match(r"^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$", value):
+            raise ValueError(
+                "Name must contain only letters, spaces, apostrophes, and hyphens."
+            )
+        return value
+
+    @field_validator("preferred_name")
+    @classmethod
+    def validate_preferred_name(cls, value: Optional[str]) -> Optional[str]:
+        if isinstance(value, str) and value.strip() == "":
+            return None
+        return value
+
+    @field_validator("birthdate")
+    @classmethod
+    def validate_birthdate(cls, value: Optional[date]) -> Optional[date]:
+        if value is None:
+            return value
+        today = date.today()
+        if value > today:
+            raise ValueError("Birthdate cannot be a future date.")
+        if value < date(1900, 1, 1):
+            raise ValueError("Birthdate cannot be before January 1, 1900.")
+        return value
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        if isinstance(value, str) and value.strip() == "":
+            return None
+        stripped = re.sub(r"[\+\-\(\)]", "", value)
+        if not stripped.isdigit():
+            raise ValueError(
+                "Phone number must contain only digits, '+', '-', '(' and ')'."
+            )
+        if not (7 <= len(stripped) <= 15):
+            raise ValueError("Phone number must have between 7 and 15 digits.")
+        return value
+
+    model_config = ConfigDict(
+        title="UpdateProfileRequest",
+        str_strip_whitespace=True,
+        extra="forbid",
+        json_schema_extra={
+            "description": "Request model for updating the authenticated user's profile. All fields are optional (partial update).",
+        },
+    )
+
+    def apply_to(self, user: User) -> None:
+        """Build updated value objects, falling back to the user's current
+        values for any field not provided in the request."""
+        new_name = Name(
+            first_name=self.first_name or user.name.first_name,
+            last_name=self.last_name or user.name.last_name,
+            preferred_name=self.preferred_name
+            if self.preferred_name is not None
+            else user.name.preferred_name,
+        )
+        if self.phone is not None:
+            new_phone: Phone | None = Phone(self.phone)
+        elif isinstance(user.phone, Phone):
+            new_phone = user.phone
+        else:
+            new_phone = None
+
+        user.update_profile(
+            name=new_name,
+            gender=self.gender if self.gender is not None else user.gender,
+            birthdate=self.birthdate if self.birthdate is not None else user.birthdate,
+            phone=new_phone,
+        )

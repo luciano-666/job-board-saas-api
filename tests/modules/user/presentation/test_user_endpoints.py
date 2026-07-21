@@ -76,3 +76,9 @@ async def test_activate_without_admin_auth_returns_401(client):
         "/api/v1/user/00000000-0000-0000-0000-000000000000/activate/"
     )
     assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.anyio
+async def test_update_me_without_auth_returns_401(client):
+    response = await client.patch("/api/v1/user/me/", json={"first_name": "New"})
+    assert response.status_code == HTTPStatus.UNAUTHORIZED

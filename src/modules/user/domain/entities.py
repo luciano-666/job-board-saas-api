@@ -65,3 +65,28 @@ class User:
         if self.is_active:
             raise DomainError("User is already active.")
         self.is_active = True
+
+    def update_profile(
+        self,
+        *,
+        name: Name,
+        gender: Gender | None,
+        birthdate: date | None,
+        phone: Phone | None,
+    ) -> None:
+        """Update editable profile fields. Email, role, and password are
+        intentionally excluded — they have their own dedicated flows."""
+        if birthdate is not None:
+            today = date.today()
+            age = (
+                today.year
+                - birthdate.year
+                - ((today.month, today.day) < (birthdate.month, birthdate.day))
+            )
+            if age < 18:
+                raise DomainError("Users must be at least 18 years old.")
+
+        self.name = name
+        self.gender = gender
+        self.birthdate = birthdate
+        self.phone = phone

@@ -22,6 +22,7 @@ from src.modules.user.presentation.docs import (
     me_docs,
     suspend_docs,
     activate_docs,
+    update_me_docs,
 )
 from src.modules.user.presentation.exceptions import UserException
 from src.modules.user.presentation.schemas import (
@@ -30,7 +31,9 @@ from src.modules.user.presentation.schemas import (
     MeResponse,
     SuspendResponse,
     ActivateResponse,
+    UpdateProfileRequest,
 )
+from src.modules.user.domain.value_objects import Phone
 
 logger = structlog.get_logger(__name__)
 
@@ -74,6 +77,35 @@ async def me(
         raise DomainException(e)
     except Exception as e:
         logger.error("An error occurred in the me endpoint.", exc_info=e)
+        raise UserException()
+
+
+@router.patch("/me/", **update_me_docs)
+@router.patch("/me", include_in_schema=False)
+async def update_me(
+    payload: UpdateProfileRequest,
+    user: User = Depends(authenticate_user),
+    use_case: UserUseCases = Depends(get_user_use_cases),
+) -> MeResponse:
+    try:
+        payload.apply_to(
+            user
+        )  # validates + builds merged value objects on `user` in-memory
+        phone = user.phone if isinstance(user.phone, Phone) else None
+        result = await use_case.update_profile(
+            user.id,
+            name=user.name,
+            gender=user.gender,
+            birthdate=user.birthdate,
+            phone=phone,
+        )
+        return MeResponse.from_entity(result)
+    except StandardException:
+        raise
+    except DomainError as e:
+        raise DomainException(e)
+    except Exception as e:
+        logger.error("An error occurred in the update_me endpoint.", exc_info=e)
         raise UserException()
 
 

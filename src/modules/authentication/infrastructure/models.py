@@ -390,7 +390,10 @@ class SessionModel(Base):
         return model
 
     def to_entity(self) -> "Session":
-        from src.modules.authentication.domain.entities import Session
+        from src.modules.authentication.domain.entities import (
+            Session,
+            AuthenticatedUser,
+        )
 
         if self.user is None:
             raise ValueError(
@@ -401,9 +404,16 @@ class SessionModel(Base):
                 "SessionModel.refresh_token must be loaded before calling to_entity()."
             )
 
+        full_user = self.user.to_entity()
+        authenticated_user = AuthenticatedUser(
+            id=full_user.id,
+            email=str(full_user.email),
+            role=full_user.role,
+        )
+
         entity = Session(
             id=self.id,
-            user=self.user.to_entity(),
+            user=authenticated_user,
             refresh_token=self.refresh_token.to_entity(),
             ip_address=self.ip_address,
             user_agent=self.user_agent,

@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Any
 
 from fastapi import Security
 
@@ -17,7 +18,7 @@ from src.modules.user.presentation.schemas import (
 )
 
 # MODULE DOCS
-router_docs = {
+router_docs: dict[str, Any] = {
     "prefix": "/api/v1/user",
     "tags": ["User"],
     "responses": {
@@ -223,7 +224,7 @@ router_docs = {
 }
 
 # ENDPOINT DOCS
-create_docs = {
+create_docs: dict[str, Any] = {
     "summary": "Endpoint for admin-only user creation.",
     "description": "Create a new user of any role (including ADMIN). Requires admin authentication.",
     "dependencies": [Security(authenticate_admin)],
@@ -259,7 +260,7 @@ create_docs = {
 }
 
 
-me_docs = {
+me_docs: dict[str, Any] = {
     "summary": "Endpoint to get the details of the authenticated user.",
     "description": "Get the details of the authenticated user.",
     "dependencies": [Security(authenticate_user)],
@@ -303,7 +304,7 @@ me_docs = {
         }
     },
 }
-suspend_docs = {
+suspend_docs: dict[str, Any] = {
     "summary": "Endpoint for admin to suspend a user account.",
     "description": "Suspend (deactivate) a user account. Requires admin authentication.",
     "dependencies": [Security(authenticate_admin)],
@@ -313,12 +314,25 @@ suspend_docs = {
     "responses": {},
 }
 
-activate_docs = {
+activate_docs: dict[str, Any] = {
     "summary": "Endpoint for admin to activate a user account.",
     "description": "Activate (reinstate) a suspended user account. Requires admin authentication.",
     "dependencies": [Security(authenticate_admin)],
     "status_code": HTTPStatus.OK,
     "response_model": ActivateResponse,
+    "include_in_schema": True,
+    "responses": {},
+}
+
+update_me_docs: dict[str, Any] = {
+    "summary": "Endpoint for the authenticated user to update their own profile.",
+    "description": (
+        "Partially update the authenticated user's profile. "
+        "Email, role, and password cannot be changed here."
+    ),
+    "dependencies": [Security(authenticate_user)],
+    "status_code": HTTPStatus.OK,
+    "response_model": MeResponse,
     "include_in_schema": True,
     "responses": {},
 }

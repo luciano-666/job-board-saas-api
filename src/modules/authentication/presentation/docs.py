@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Any
 
 from fastapi import Security
 
@@ -15,7 +16,7 @@ from src.modules.shared.application.enums import ResponseMessages
 from src.modules.shared.presentation.schemas import StandardResponse
 
 # MODULE DOCS
-router_docs = {
+router_docs: dict[str, Any] = {
     "prefix": "/api/v1/authentication",
     "tags": ["Authentication"],
     "responses": {
@@ -221,7 +222,7 @@ router_docs = {
 }
 
 # ENDPOINT DOCS
-login_docs = {
+login_docs: dict[str, Any] = {
     "summary": "Endpoint to login a user.",
     "description": (
         "Authenticate a user and initiate a login session. "
@@ -264,7 +265,7 @@ login_docs = {
 }
 
 
-refresh_docs = {
+refresh_docs: dict[str, Any] = {
     "summary": "Endpoint to refresh authentication tokens.",
     "description": (
         "Validates the `refresh_token` from HttpOnly cookies using `refresh_tokens` "
@@ -318,7 +319,7 @@ refresh_docs = {
     },
 }
 
-logout_docs = {
+logout_docs: dict[str, Any] = {
     "summary": "Endpoint to logout a user.",
     "description": (
         "Invalidates the authenticated session and removes authentication cookies. "
@@ -371,7 +372,7 @@ logout_docs = {
     },
 }
 
-register_docs = {
+register_docs: dict[str, Any] = {
     "summary": "Endpoint to publicly register a new user.",
     "description": (
         "Register a new user as EMPLOYER or CANDIDATE. "

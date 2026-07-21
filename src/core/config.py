@@ -201,6 +201,8 @@ class Settings(BaseSettings):
             # USER
             {"endpoint": "/api/v1/user/me", "method": "GET"},
             {"endpoint": "/api/v1/user/me/", "method": "GET"},
+            {"endpoint": "/api/v1/user/me/", "method": "PATCH"},
+            {"endpoint": "/api/v1/user/me", "method": "PATCH"},
         ]
 
     @computed_field
