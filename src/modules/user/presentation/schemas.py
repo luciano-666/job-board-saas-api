@@ -524,3 +524,24 @@ class UpdateProfileRequest(BaseModel):
             birthdate=self.birthdate if self.birthdate is not None else user.birthdate,
             phone=new_phone,
         )
+
+
+class DeactivateSelfRequest(BaseModel):
+    password: str = Field(
+        title="Current Password (Required)",
+        description="Current password required to confirm account deactivation.",
+        min_length=1,
+        examples=["MyP@ssword123"],
+    )
+
+    model_config = ConfigDict(str_strip_whitespace=False, extra="forbid")
+
+
+class DeactivateSelfResponse(BaseModel):
+    message: str = ResponseMessages.UPDATED.value
+
+    model_config = ConfigDict(
+        title="DeactivateSelfResponse",
+        extra="forbid",
+        json_schema_extra={"example": {"message": ResponseMessages.UPDATED.value}},
+    )

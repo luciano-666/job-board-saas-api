@@ -203,6 +203,8 @@ class Settings(BaseSettings):
             {"endpoint": "/api/v1/user/me/", "method": "GET"},
             {"endpoint": "/api/v1/user/me/", "method": "PATCH"},
             {"endpoint": "/api/v1/user/me", "method": "PATCH"},
+            {"endpoint": "/api/v1/user/me/", "method": "DELETE"},
+            {"endpoint": "/api/v1/user/me", "method": "DELETE"},
         ]
 
     @computed_field
@@ -254,4 +256,4 @@ class Settings(BaseSettings):
     PASSWORD_RESET_TOKEN_EXPIRE_SECONDS: int = 900  # 15 minutes
 
 
-settings = Settings()  # type: ignore
+settings = Settings()

@@ -23,6 +23,7 @@ from src.modules.user.presentation.docs import (
     suspend_docs,
     activate_docs,
     update_me_docs,
+    deactivate_self_docs,
 )
 from src.modules.user.presentation.exceptions import UserException
 from src.modules.user.presentation.schemas import (
@@ -32,6 +33,8 @@ from src.modules.user.presentation.schemas import (
     SuspendResponse,
     ActivateResponse,
     UpdateProfileRequest,
+    DeactivateSelfRequest,
+    DeactivateSelfResponse,
 )
 from src.modules.user.domain.value_objects import Phone
 
@@ -144,4 +147,23 @@ async def activate(
         raise DomainException(e)
     except Exception as e:
         logger.error("An error occurred in the activate endpoint.", exc_info=e)
+        raise UserException()
+
+
+@router.delete("/me/", **deactivate_self_docs)
+@router.delete("/me", include_in_schema=False)
+async def deactivate_self(
+    payload: DeactivateSelfRequest,
+    user: User = Depends(authenticate_user),
+    use_case: UserUseCases = Depends(get_user_use_cases),
+) -> DeactivateSelfResponse:
+    try:
+        await use_case.deactivate_self(user.id, password=payload.password)
+        return DeactivateSelfResponse()
+    except StandardException:
+        raise
+    except DomainError as e:
+        raise DomainException(e)
+    except Exception as e:
+        logger.error("An error occurred in the deactivate_self endpoint.", exc_info=e)
         raise UserException()

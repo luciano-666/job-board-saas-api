@@ -14,7 +14,9 @@ from src.modules.user.domain.value_objects import Name, Email
 from src.modules.user.presentation.exceptions import (
     UserEmailAlreadyExistsException,
     UserEmailNotFoundException,
+    UserInvalidPasswordException,
 )
+from src.core.security import hash_password
 from tests.modules.user.fakes import FakeUserRepository, FakeSharedUseCases
 from tests.utils import random_email, random_id
 
@@ -366,3 +368,39 @@ async def test_update_profile_raises_not_found_when_user_missing():
             birthdate=None,
             phone=None,
         )
+
+
+# self-deactivate
+@pytest.mark.anyio
+async def test_deactivate_self_sets_user_inactive_with_correct_password():
+    existing = make_user(password="P@ssword1")
+    existing.hashed_password = await hash_password("P@ssword1")
+    use_cases, repo = make_use_cases(existing=[existing])
+
+    await use_cases.deactivate_self(existing.id, password="P@ssword1")
+
+    stored = await repo.get_by_id_any_status(existing.id)
+    assert stored is not None
+    assert stored.is_active is False
+
+
+@pytest.mark.anyio
+async def test_deactivate_self_raises_when_password_incorrect():
+    existing = make_user(password="P@ssword1")
+    existing.hashed_password = await hash_password("P@ssword1")
+    use_cases, repo = make_use_cases(existing=[existing])
+
+    with pytest.raises(UserInvalidPasswordException):
+        await use_cases.deactivate_self(existing.id, password="WrongPass1!")
+
+    stored = await repo.get_by_id_any_status(existing.id)
+    assert stored is not None
+    assert stored.is_active is True  # unchanged
+
+
+@pytest.mark.anyio
+async def test_deactivate_self_raises_not_found_when_user_missing():
+    use_cases, _ = make_use_cases()
+
+    with pytest.raises(UserEmailNotFoundException):
+        await use_cases.deactivate_self(random_id(), password="anything")

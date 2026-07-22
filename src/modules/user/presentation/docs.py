@@ -15,6 +15,7 @@ from src.modules.user.presentation.schemas import (
     MeResponse,
     SuspendResponse,
     ActivateResponse,
+    DeactivateSelfResponse,
 )
 
 # MODULE DOCS
@@ -333,6 +334,20 @@ update_me_docs: dict[str, Any] = {
     "dependencies": [Security(authenticate_user)],
     "status_code": HTTPStatus.OK,
     "response_model": MeResponse,
+    "include_in_schema": True,
+    "responses": {},
+}
+
+deactivate_self_docs: dict[str, Any] = {
+    "summary": "Endpoint for the authenticated user to deactivate their own account.",
+    "description": (
+        "Self-service account deactivation. Requires the current password "
+        "as confirmation. Unlike admin suspension, reactivation requires "
+        "contacting support."
+    ),
+    "dependencies": [Security(authenticate_user)],
+    "status_code": HTTPStatus.OK,
+    "response_model": DeactivateSelfResponse,
     "include_in_schema": True,
     "responses": {},
 }

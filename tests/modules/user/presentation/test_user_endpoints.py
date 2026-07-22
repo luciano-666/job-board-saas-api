@@ -82,3 +82,11 @@ async def test_activate_without_admin_auth_returns_401(client):
 async def test_update_me_without_auth_returns_401(client):
     response = await client.patch("/api/v1/user/me/", json={"first_name": "New"})
     assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.anyio
+async def test_deactivate_self_without_auth_returns_401(client):
+    response = await client.request(
+        "DELETE", "/api/v1/user/me/", json={"password": "anything"}
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED

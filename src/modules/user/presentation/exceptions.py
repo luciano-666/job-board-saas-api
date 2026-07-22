@@ -60,3 +60,15 @@ class CookieManagementException(StandardException):
             message=message,
             data={"errors": errors},
         )
+
+
+class UserInvalidPasswordException(StandardException):
+    def __init__(self) -> None:
+        message = ResponseMessages.UNAUTHORIZED_ERROR.value
+        errors = "Incorrect password. Account deactivation was not performed."
+
+        super().__init__(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            message=message,
+            data={"errors": errors},
+        )

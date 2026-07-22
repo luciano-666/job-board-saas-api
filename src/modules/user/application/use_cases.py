@@ -5,7 +5,7 @@ from datetime import date
 from src.modules.user.application.interfaces import IUserRepository
 from src.modules.user.domain.entities import User
 from src.modules.user.domain.value_objects import Name, Phone
-from src.core.security import hash_password
+from src.core.security import hash_password, verify_password
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
     StandardException,
@@ -15,6 +15,7 @@ from src.modules.user.presentation.exceptions import (
     UserEmailAlreadyExistsException,
     UserException,
     UserEmailNotFoundException,
+    UserInvalidPasswordException,
 )
 from src.modules.shared.application.interfaces import ISharedUseCases
 from src.modules.user.application.enums import Gender
@@ -162,5 +163,33 @@ class UserUseCases:
         except Exception as e:
             logger.error(
                 "An error occurred during the update profile use case.", exc_info=e
+            )
+            raise UserException()
+
+    # UPDATE
+    async def deactivate_self(self, id: UUID, password: str) -> None:
+        try:
+            logger.debug(f"Initializing self-deactivation use case for id: {id}.")
+
+            user = await self.repository.get_by_id(id)
+            if user is None:
+                raise UserEmailNotFoundException(email=str(id))
+
+            if not await verify_password(password, user.hashed_password or ""):
+                logger.info(f"Incorrect password for self-deactivation of user {id}.")
+                raise UserInvalidPasswordException()
+
+            user.suspend()
+            await self.repository.update(user)
+
+            logger.debug(f"User {id} self-deactivated successfully.")
+            return None
+        except StandardException:
+            raise
+        except DomainError as e:
+            raise DomainException(e)
+        except Exception as e:
+            logger.error(
+                "An error occurred during the self-deactivation use case.", exc_info=e
             )
             raise UserException()
