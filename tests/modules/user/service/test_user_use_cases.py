@@ -332,7 +332,7 @@ def test_update_profile_rejects_underage_birthdate():
 
     with pytest.raises(DomainError, match="18 years old"):
         user.update_profile(
-            name=user.name, gender=user.gender, birthdate=underage, phone=user.phone
+            name=user.name, gender=user.gender, birthdate=underage, phone=None
         )
 
 

@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
@@ -133,7 +134,7 @@ for router in routers:
 
 
 # CUSTOM OPENAPI
-def custom_openapi():
+def custom_openapi() -> dict[str, Any]:
     if app.openapi_schema:
         return app.openapi_schema
 
@@ -179,4 +180,8 @@ def custom_openapi():
     return openapi_schema
 
 
-app.openapi = custom_openapi
+app.openapi = custom_openapi  # ty:ignore[invalid-assignment]
+# Officially documented FastAPI pattern for custom OpenAPI schema generation
+# (https://fastapi.tiangolo.com/how-to/extending-openapi/). Pyright cannot
+# reconcile a plain function against a bound-method attribute type here;
+# this is a static-analysis limitation, not a runtime issue.

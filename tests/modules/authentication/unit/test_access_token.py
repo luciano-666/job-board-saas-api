@@ -77,7 +77,8 @@ def test_revoke_idempotent_second_call_updates_revoked_at():
     # Still revoked, revoked_at refreshed (not necessarily equal due to clock)
     assert token.revoked is True
     assert token.revoked_at is not None
-    assert token.revoked_at >= first_revoked_at  # type: ignore[operator]
+    assert first_revoked_at is not None
+    assert token.revoked_at >= first_revoked_at
 
 
 # ---------------------------------------------------------------------------
@@ -254,7 +255,8 @@ def test_set_claims_exp_matches_expires_at():
 def test_set_claims_iat_matches_created_at():
     token = make_access_token()
     token.stamp_created_at()
-    expected_iat = int(token.created_at.timestamp())  # type: ignore[union-attr]
+    assert token.created_at is not None
+    expected_iat = int(token.created_at.timestamp())
 
     token.set_claims(**_valid_claims_kwargs(token))
 
@@ -289,7 +291,8 @@ def test_set_claims_is_overwritable_on_second_call():
     token.stamp_created_at()
 
     token.set_claims(**_valid_claims_kwargs(token))
-    first_jti = token.claims.jti  # type: ignore[union-attr]
+    assert token.claims is not None
+    first_jti = token.claims.jti
 
     new_kwargs = _valid_claims_kwargs(token)
     new_kwargs["jti"] = uuid4()
