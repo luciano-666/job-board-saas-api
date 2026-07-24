@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from datetime import datetime, timedelta, UTC
 from uuid import UUID, uuid4
 
 from src.modules.shared.domain.entities import DomainError
@@ -12,10 +12,12 @@ class Job:
     title: str
     description: str
     location: str
-    salary: SalaryRange
     job_type: JobType
     skills: list[str]
     employer_id: UUID
+
+    # Optional — either bound may be omitted
+    salary: SalaryRange = field(default_factory=lambda: SalaryRange())
 
     # Application-managed fields
     id: UUID = field(default_factory=uuid4)
@@ -31,13 +33,14 @@ class Job:
         self.title = self.title.strip()
         self.description = self.description.strip()
         self.location = self.location.strip()
+
         # Deduplicate while preserving first-seen order.
-        normalized_skills: list[str] = []
+        seen: list[str] = []
         for skill in self.skills:
             normalized = skill.strip().lower()
-            if normalized and normalized not in normalized_skills:
-                normalized_skills.append(normalized)
-        self.skills = normalized_skills
+            if normalized and normalized not in seen:
+                seen.append(normalized)
+        self.skills = seen
 
     def _validate(self) -> None:
         if not self.title:
@@ -54,25 +57,49 @@ class Job:
 
     # ------------------------------------------------------------------
     # Status transitions
+    #   draft  -> open      (publish)
+    #   open   -> closed    (close)
+    #   open   -> archived  (archive, only 90+ days after created_at)
+    #   closed -> archived  (archive, only 90+ days after created_at)
     # ------------------------------------------------------------------
 
+    ARCHIVE_ELIGIBLE_AFTER = timedelta(days=90)
+
     def publish(self) -> None:
+        """Transition from draft to open."""
         if self.status != JobStatus.DRAFT:
             raise DomainError("Only a draft job can be published.")
         self.status = JobStatus.OPEN
         self._touch()
 
     def close(self) -> None:
+        """Transition from open to closed."""
         if self.status != JobStatus.OPEN:
             raise DomainError("Only an open job can be closed.")
         self.status = JobStatus.CLOSED
         self._touch()
 
     def archive(self) -> None:
-        if self.status != JobStatus.CLOSED:
-            raise DomainError("Only a closed job can be archived.")
+        """Transition from open or closed to archived.
+
+        Only allowed once the job has existed for at least 90 days,
+        counted from created_at — matches the scheduled auto-archive
+        rule described in the project spec.
+        """
+        if self.status not in (JobStatus.OPEN, JobStatus.CLOSED):
+            raise DomainError("Only an open or closed job can be archived.")
+
+        if not self._is_eligible_for_archive():
+            raise DomainError(
+                "A job can only be archived after 90 days since its creation."
+            )
+
         self.status = JobStatus.ARCHIVED
         self._touch()
+
+    def _is_eligible_for_archive(self) -> bool:
+        age = datetime.now(UTC) - self.created_at
+        return age >= self.ARCHIVE_ELIGIBLE_AFTER
 
     def _touch(self) -> None:
         self.updated_at = datetime.now(UTC)
