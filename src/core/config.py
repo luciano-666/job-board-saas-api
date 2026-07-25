@@ -209,13 +209,6 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def SECURITY_MANAGER_ALLOWED_PATHS(self) -> list[dict[str, str]]:  # noqa
-        return [
-            *self.SECURITY_USER_ALLOWED_PATHS,
-        ]
-
-    @computed_field
-    @property
     def SECURITY_EMPLOYER_ALLOWED_PATHS(self) -> list[dict[str, str]]:
         return [
             *self.SECURITY_USER_ALLOWED_PATHS,
