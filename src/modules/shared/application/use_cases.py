@@ -12,6 +12,8 @@ from src.modules.user.presentation.exceptions import (
     UserException,
     UserEmailNotFoundException,
 )
+from src.modules.jobs.domain.entities import Job
+from src.modules.jobs.application.interfaces import IJobRepository
 
 logger = structlog.get_logger(__name__)
 
@@ -20,8 +22,10 @@ class SharedUseCases:
     def __init__(
         self,
         user_repository: IUserRepository,
+        job_repository: IJobRepository,
     ) -> None:
         self.user_repository = user_repository
+        self.job_repository = job_repository
         self._raise_exceptions = True
 
     @property
@@ -79,3 +83,18 @@ class SharedUseCases:
     async def update_user_password(self, user: User) -> None:
         logger.debug(f"Updating password for user {user.id}.")
         await self.user_repository.update(user)
+
+    async def get_job_by_id(self, id: UUID) -> Job | None:
+        """Retrieve a job by id, regardless of caller's module.
+
+        Exposed here so other bounded contexts (e.g. applications) can
+        query job existence/details without importing IJobRepository
+        directly — preserves module dependency direction.
+        """
+        logger.debug(f"Initializing get job by id use case for id: {id}.")
+        job = await self.job_repository.get_by_id(id)
+
+        if job is None:
+            logger.info(f"Job with id {id} not found.")
+
+        return job

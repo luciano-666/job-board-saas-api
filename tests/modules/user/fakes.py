@@ -9,6 +9,7 @@ from uuid import UUID
 
 from src.modules.user.domain.entities import User
 from src.modules.user.domain.value_objects import Email
+from src.modules.jobs.domain.entities import Job
 
 
 class FakeUserRepository:
@@ -59,3 +60,6 @@ class FakeSharedUseCases:
         if result is None:
             raise UserEmailNotFoundException(email=email)
         return result
+
+    async def get_job_by_id(self, id: UUID) -> Optional[Job]:
+        return None
