@@ -12,6 +12,9 @@ wheels/
 # Environment variables
 .env
 
+# VS Code extension
+.continue/
+
 # Cache
 .ruff_cache/
 .pytest_cache/
