@@ -216,9 +216,27 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
+    def SECURITY_EMPLOYER_ALLOWED_PATHS(self) -> list[dict[str, str]]:
+        return [
+            *self.SECURITY_USER_ALLOWED_PATHS,
+            # JOBS — employer-owned job management (endpoints added in JOBS-8+)
+            {"endpoint": "/api/v1/jobs/", "method": "POST"},
+            {"endpoint": "/api/v1/jobs", "method": "POST"},
+            {"endpoint": "/api/v1/jobs/{job_id}/", "method": "PATCH"},
+            {"endpoint": "/api/v1/jobs/{job_id}", "method": "PATCH"},
+            {"endpoint": "/api/v1/jobs/{job_id}/publish/", "method": "PATCH"},
+            {"endpoint": "/api/v1/jobs/{job_id}/publish", "method": "PATCH"},
+            {"endpoint": "/api/v1/jobs/{job_id}/close/", "method": "PATCH"},
+            {"endpoint": "/api/v1/jobs/{job_id}/close", "method": "PATCH"},
+            {"endpoint": "/api/v1/jobs/{job_id}/archive/", "method": "PATCH"},
+            {"endpoint": "/api/v1/jobs/{job_id}/archive", "method": "PATCH"},
+        ]
+
+    @computed_field
+    @property
     def SECURITY_ADMIN_ALLOWED_PATHS(self) -> list[dict[str, str]]:  # noqa
         return [
-            *self.SECURITY_MANAGER_ALLOWED_PATHS,
+            *self.SECURITY_EMPLOYER_ALLOWED_PATHS,
             # HEALTH
             {"endpoint": "/api/v1/alembic-version/", "method": "GET"},
             {"endpoint": "/api/v1/alembic-version", "method": "GET"},

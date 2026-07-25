@@ -21,6 +21,8 @@ async def has_access_to_endpoint(
             paths = settings.SECURITY_NO_AUTH_PATHS
         elif role == Role.ADMIN:
             paths = settings.SECURITY_ADMIN_ALLOWED_PATHS
+        elif role == Role.EMPLOYER:
+            paths = settings.SECURITY_EMPLOYER_ALLOWED_PATHS
         else:
             paths = settings.SECURITY_USER_ALLOWED_PATHS
 

@@ -249,6 +249,73 @@ async def authenticate_manager(
         raise AuthenticationException()
 
 
+async def authenticate_employer(
+    request: Request,
+    repository: IAuthenticationRepository = Depends(get_authentication_repository),
+    shared_service: SharedUseCases = Depends(get_shared_use_cases),
+) -> User:
+    try:
+        logger.debug(
+            f"Authenticating employer for endpoint '{request.url.path}' with method '{request.method}'."
+        )
+
+        token = request.cookies.get(settings.COOKIES_ACCESS_TOKEN_KEY, None)
+        device = request.cookies.get(settings.COOKIES_DEVICE_KEY, None)
+
+        if not token or not device:
+            raise AuthenticationCookiesNotProvidedException()
+
+        session: Session = await decode_nested_access_token(token)
+        session: Session = await hash_tokens(session)
+
+        session.device = device
+        session.user_agent = (request.headers.get("user-agent") or "").lower().strip()
+
+        db_session: Optional[Session] = await repository.get_access_token_by_session(
+            SessionLookup.from_access_session(session)
+        )
+
+        if (
+            db_session is None
+            or db_session.refresh_token is None
+            or db_session.refresh_token.access_token is None
+        ):
+            raise AuthenticationTokenInvalidException()
+
+        session: Session = db_session
+
+        if not session.user.role == session.refresh_token.access_token.permission:
+            raise ModifiedTokenException()
+
+        if not session.refresh_token.access_token.permission == Role.EMPLOYER:
+            logger.info(
+                f"User '{session.user.email}' attempted to access endpoint '{request.url.path}' "
+                f"with method '{request.method}' with insufficient permissions (not employer)."
+            )
+            raise UserHasNotPermissionException()
+
+        if not await has_access_to_endpoint(
+            request.url.path,
+            request.method,
+            session.refresh_token.access_token.permission,
+        ):
+            raise UserHasNotPermissionException()
+
+        logger.debug(f"Employer '{session.user.email}' authenticated successfully.")
+        user: User | None = await shared_service.get_user_by_id(session.user.id)
+        if user is None:
+            raise AuthenticationTokenInvalidException()
+
+        return user
+    except StandardException:
+        raise
+    except Exception as e:
+        logger.error(
+            "An error occurred during employer authentication process.", exc_info=e
+        )
+        raise AuthenticationException()
+
+
 async def authenticate_admin(
     request: Request,
     repository: IAuthenticationRepository = Depends(get_authentication_repository),
