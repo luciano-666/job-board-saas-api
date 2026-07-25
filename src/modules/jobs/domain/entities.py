@@ -103,3 +103,24 @@ class Job:
 
     def _touch(self) -> None:
         self.updated_at = datetime.now(UTC)
+
+    def update_details(
+        self,
+        *,
+        title: str,
+        description: str,
+        location: str,
+        job_type: JobType,
+        skills: list[str],
+        salary: SalaryRange,
+    ) -> None:
+        """Update editable job fields. Status transitions have dedicated methods."""
+        self.title = title
+        self.description = description
+        self.location = location
+        self.job_type = job_type
+        self.skills = skills
+        self.salary = salary
+        self._normalize()
+        self._validate()
+        self._touch()

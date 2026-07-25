@@ -31,6 +31,7 @@ from src.modules.authentication.presentation.routers import (
     router as authentication_router,
 )
 from src.modules.user.presentation.routers import router as user_router
+from src.modules.jobs.presentation.routers import router as jobs_router
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -124,10 +125,7 @@ app.add_middleware(ResponseFormattingMiddleware)
 app.add_middleware(DeviceIdMiddleware)
 
 # ROUTERS
-routers = [
-    authentication_router,
-    user_router,
-]
+routers = [authentication_router, user_router, jobs_router]
 
 for router in routers:
     app.include_router(router)
@@ -151,6 +149,10 @@ def custom_openapi() -> dict[str, Any]:
             {
                 "name": "User",
                 "description": "Endpoints for managing user resources.",
+            },
+            {
+                "name": "Jobs",
+                "description": "Endpoints for managing job resources.",
             },
         ],
         contact={
