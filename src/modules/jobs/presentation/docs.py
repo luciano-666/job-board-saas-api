@@ -4,7 +4,13 @@ from typing import Any
 from fastapi import Security
 
 from src.modules.authentication.presentation.dependencies import authenticate_employer
-from src.modules.jobs.presentation.schemas import CreateJobResponse, UpdateJobResponse
+from src.modules.jobs.presentation.schemas import (
+    CreateJobResponse,
+    UpdateJobResponse,
+    PublishJobResponse,
+    CloseJobResponse,
+    ArchiveJobResponse,
+)
 
 router_docs: dict[str, Any] = {
     "prefix": "/api/v1/jobs",
@@ -27,6 +33,40 @@ update_job_docs: dict[str, Any] = {
     "dependencies": [Security(authenticate_employer)],
     "status_code": HTTPStatus.OK,
     "response_model": UpdateJobResponse,
+    "include_in_schema": True,
+    "responses": {},
+}
+
+
+publish_job_docs: dict[str, Any] = {
+    "summary": "Endpoint for an employer to publish a draft job posting.",
+    "description": "Transition a job from draft to open. Requires employer authentication and ownership.",
+    "dependencies": [Security(authenticate_employer)],
+    "status_code": HTTPStatus.OK,
+    "response_model": PublishJobResponse,
+    "include_in_schema": True,
+    "responses": {},
+}
+
+close_job_docs: dict[str, Any] = {
+    "summary": "Endpoint for an employer to close an open job posting.",
+    "description": "Transition a job from open to closed. Requires employer authentication and ownership.",
+    "dependencies": [Security(authenticate_employer)],
+    "status_code": HTTPStatus.OK,
+    "response_model": CloseJobResponse,
+    "include_in_schema": True,
+    "responses": {},
+}
+
+archive_job_docs: dict[str, Any] = {
+    "summary": "Endpoint for an employer to archive a job posting.",
+    "description": (
+        "Transition a job from open or closed to archived. Only allowed 90+ "
+        "days after creation. Requires employer authentication and ownership."
+    ),
+    "dependencies": [Security(authenticate_employer)],
+    "status_code": HTTPStatus.OK,
+    "response_model": ArchiveJobResponse,
     "include_in_schema": True,
     "responses": {},
 }

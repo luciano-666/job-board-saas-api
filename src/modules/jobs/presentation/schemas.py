@@ -121,3 +121,24 @@ class UpdateJobResponse(BaseModel):
     data: JobResponse
 
     model_config = ConfigDict(title="UpdateJobResponse", extra="forbid")
+
+
+class PublishJobResponse(BaseModel):
+    message: str = ResponseMessages.UPDATED.value
+    data: JobResponse
+
+    model_config = ConfigDict(title="PublishJobResponse", extra="forbid")
+
+
+class CloseJobResponse(BaseModel):
+    message: str = ResponseMessages.UPDATED.value
+    data: JobResponse
+
+    model_config = ConfigDict(title="CloseJobResponse", extra="forbid")
+
+
+class ArchiveJobResponse(BaseModel):
+    message: str = ResponseMessages.UPDATED.value
+    data: JobResponse
+
+    model_config = ConfigDict(title="ArchiveJobResponse", extra="forbid")

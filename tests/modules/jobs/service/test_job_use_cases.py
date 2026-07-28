@@ -22,7 +22,7 @@ def make_job(employer_id=None, **overrides) -> Job:
         salary=SalaryRange(min=2000, max=4000),
     )
     defaults.update(overrides)
-    return Job(**defaults)
+    return Job(**defaults)  # ty:ignore[invalid-argument-type]
 
 
 def make_use_cases(existing: list[Job] | None = None):
@@ -136,3 +136,167 @@ async def test_update_job_raises_forbidden_when_not_owner():
             skills=existing.skills,
             salary=existing.salary,
         )
+
+
+# ---------------------------------------------------------------------------
+# publish_job
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_publish_job_transitions_draft_to_open():
+    employer_id = uuid4()
+    existing = make_job(employer_id=employer_id)
+    use_cases, repo = make_use_cases(existing=[existing])
+
+    result = await use_cases.publish_job(job_id=existing.id, employer_id=employer_id)
+
+    stored = await repo.get_by_id(existing.id)
+    assert stored is not None
+    assert stored.status == JobStatus.OPEN
+    assert result.status == JobStatus.OPEN
+
+
+@pytest.mark.anyio
+async def test_publish_job_raises_not_found_when_job_missing():
+    from src.modules.jobs.presentation.exceptions import JobNotFoundException
+
+    use_cases, _ = make_use_cases()
+
+    with pytest.raises(JobNotFoundException):
+        await use_cases.publish_job(job_id=uuid4(), employer_id=uuid4())
+
+
+@pytest.mark.anyio
+async def test_publish_job_raises_forbidden_when_not_owner():
+    from src.modules.jobs.presentation.exceptions import JobNotOwnedException
+
+    owner_id = uuid4()
+    other_id = uuid4()
+    existing = make_job(employer_id=owner_id)
+    use_cases, _ = make_use_cases(existing=[existing])
+
+    with pytest.raises(JobNotOwnedException):
+        await use_cases.publish_job(job_id=existing.id, employer_id=other_id)
+
+
+@pytest.mark.anyio
+async def test_publish_job_raises_domain_error_when_not_draft():
+    from src.modules.shared.presentation.exceptions import DomainException
+
+    employer_id = uuid4()
+    existing = make_job(employer_id=employer_id)
+    existing.publish()  # now OPEN
+    use_cases, _ = make_use_cases(existing=[existing])
+
+    with pytest.raises(DomainException):
+        await use_cases.publish_job(job_id=existing.id, employer_id=employer_id)
+
+
+# ---------------------------------------------------------------------------
+# close_job
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_close_job_transitions_open_to_closed():
+    employer_id = uuid4()
+    existing = make_job(employer_id=employer_id)
+    existing.publish()
+    use_cases, repo = make_use_cases(existing=[existing])
+
+    result = await use_cases.close_job(job_id=existing.id, employer_id=employer_id)
+
+    stored = await repo.get_by_id(existing.id)
+    assert stored is not None
+    assert stored.status == JobStatus.CLOSED
+    assert result.status == JobStatus.CLOSED
+
+
+@pytest.mark.anyio
+async def test_close_job_raises_forbidden_when_not_owner():
+    from src.modules.jobs.presentation.exceptions import JobNotOwnedException
+
+    owner_id = uuid4()
+    other_id = uuid4()
+    existing = make_job(employer_id=owner_id)
+    existing.publish()
+    use_cases, _ = make_use_cases(existing=[existing])
+
+    with pytest.raises(JobNotOwnedException):
+        await use_cases.close_job(job_id=existing.id, employer_id=other_id)
+
+
+@pytest.mark.anyio
+async def test_close_job_raises_domain_error_when_not_open():
+    from src.modules.shared.presentation.exceptions import DomainException
+
+    employer_id = uuid4()
+    existing = make_job(employer_id=employer_id)  # still DRAFT
+    use_cases, _ = make_use_cases(existing=[existing])
+
+    with pytest.raises(DomainException):
+        await use_cases.close_job(job_id=existing.id, employer_id=employer_id)
+
+
+# ---------------------------------------------------------------------------
+# archive_job
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_archive_job_transitions_closed_to_archived():
+    from datetime import datetime, timedelta, UTC
+
+    employer_id = uuid4()
+    existing = make_job(employer_id=employer_id)
+    existing.publish()
+    existing.close()
+    existing.created_at = datetime.now(UTC) - timedelta(days=91)
+    use_cases, repo = make_use_cases(existing=[existing])
+
+    result = await use_cases.archive_job(job_id=existing.id, employer_id=employer_id)
+
+    stored = await repo.get_by_id(existing.id)
+    assert stored is not None
+    assert stored.status == JobStatus.ARCHIVED
+    assert result.status == JobStatus.ARCHIVED
+
+
+@pytest.mark.anyio
+async def test_archive_job_raises_forbidden_when_not_owner():
+    from datetime import datetime, timedelta, UTC
+    from src.modules.jobs.presentation.exceptions import JobNotOwnedException
+
+    owner_id = uuid4()
+    other_id = uuid4()
+    existing = make_job(employer_id=owner_id)
+    existing.publish()
+    existing.created_at = datetime.now(UTC) - timedelta(days=91)
+    use_cases, _ = make_use_cases(existing=[existing])
+
+    with pytest.raises(JobNotOwnedException):
+        await use_cases.archive_job(job_id=existing.id, employer_id=other_id)
+
+
+@pytest.mark.anyio
+async def test_archive_job_raises_domain_error_before_90_days():
+    from src.modules.shared.presentation.exceptions import DomainException
+
+    employer_id = uuid4()
+    existing = make_job(employer_id=employer_id)
+    existing.publish()
+    use_cases, _ = make_use_cases(existing=[existing])
+
+    with pytest.raises(DomainException):
+        await use_cases.archive_job(job_id=existing.id, employer_id=employer_id)
+
+
+@pytest.mark.anyio
+async def test_archive_job_raises_not_found_when_job_missing():
+    from src.modules.jobs.presentation.exceptions import JobNotFoundException
+
+    use_cases, _ = make_use_cases()
+
+    with pytest.raises(JobNotFoundException):
+        await use_cases.archive_job(job_id=uuid4(), employer_id=uuid4())

@@ -10,6 +10,9 @@ from src.modules.jobs.presentation.docs import (
     router_docs,
     create_job_docs,
     update_job_docs,
+    publish_job_docs,
+    close_job_docs,
+    archive_job_docs,
 )
 from src.modules.jobs.presentation.exceptions import JobException
 from src.modules.jobs.presentation.schemas import (
@@ -17,6 +20,9 @@ from src.modules.jobs.presentation.schemas import (
     CreateJobResponse,
     UpdateJobRequest,
     UpdateJobResponse,
+    PublishJobResponse,
+    CloseJobResponse,
+    ArchiveJobResponse,
     JobResponse,
 )
 from src.modules.shared.domain.entities import DomainError
@@ -84,4 +90,64 @@ async def update_job(
         raise DomainException(e)
     except Exception as e:
         logger.error("An error occurred in the update job endpoint.", exc_info=e)
+        raise JobException()
+
+
+# UPDATE — publish (draft -> open), owner only
+@router.patch("/{job_id}/publish/", **publish_job_docs)
+@router.patch("/{job_id}/publish", include_in_schema=False)
+async def publish_job(
+    job_id: UUID,
+    user: User = Depends(authenticate_employer),
+    use_case: JobUseCases = Depends(get_job_use_cases),
+) -> PublishJobResponse:
+    try:
+        result = await use_case.publish_job(job_id=job_id, employer_id=user.id)
+        return PublishJobResponse(data=JobResponse.from_entity(result))
+    except StandardException:
+        raise
+    except DomainError as e:
+        raise DomainException(e)
+    except Exception as e:
+        logger.error("An error occurred in the publish job endpoint.", exc_info=e)
+        raise JobException()
+
+
+# UPDATE — close (open -> closed), owner only
+@router.patch("/{job_id}/close/", **close_job_docs)
+@router.patch("/{job_id}/close", include_in_schema=False)
+async def close_job(
+    job_id: UUID,
+    user: User = Depends(authenticate_employer),
+    use_case: JobUseCases = Depends(get_job_use_cases),
+) -> CloseJobResponse:
+    try:
+        result = await use_case.close_job(job_id=job_id, employer_id=user.id)
+        return CloseJobResponse(data=JobResponse.from_entity(result))
+    except StandardException:
+        raise
+    except DomainError as e:
+        raise DomainException(e)
+    except Exception as e:
+        logger.error("An error occurred in the close job endpoint.", exc_info=e)
+        raise JobException()
+
+
+# UPDATE — archive (open|closed -> archived, 90+ days), owner only
+@router.patch("/{job_id}/archive/", **archive_job_docs)
+@router.patch("/{job_id}/archive", include_in_schema=False)
+async def archive_job(
+    job_id: UUID,
+    user: User = Depends(authenticate_employer),
+    use_case: JobUseCases = Depends(get_job_use_cases),
+) -> ArchiveJobResponse:
+    try:
+        result = await use_case.archive_job(job_id=job_id, employer_id=user.id)
+        return ArchiveJobResponse(data=JobResponse.from_entity(result))
+    except StandardException:
+        raise
+    except DomainError as e:
+        raise DomainException(e)
+    except Exception as e:
+        logger.error("An error occurred in the archive job endpoint.", exc_info=e)
         raise JobException()
