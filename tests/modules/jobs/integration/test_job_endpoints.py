@@ -66,3 +66,23 @@ async def test_archive_job_without_auth_returns_401(client):
         "/api/v1/jobs/00000000-0000-0000-0000-000000000000/archive/"
     )
     assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.anyio
+async def test_list_jobs_public_returns_200_with_empty_data(client):
+    response = await client.get("/api/v1/jobs/")
+    assert response.status_code == HTTPStatus.OK
+    body = response.json()
+
+    # ResponseFormattingMiddleware wraps the entire JobListResponse body
+    # under details.data, so the job list itself is nested one level deeper.
+    payload = body["details"]["data"]
+    assert payload["data"] == []
+    assert payload["has_more"] is False
+    assert payload["next_cursor"] is None
+
+
+@pytest.mark.anyio
+async def test_list_jobs_rejects_invalid_limit(client):
+    response = await client.get("/api/v1/jobs/", params={"limit": 0})
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT

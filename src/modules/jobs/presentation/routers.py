@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 import structlog
@@ -14,6 +15,7 @@ from src.modules.jobs.presentation.docs import (
     close_job_docs,
     archive_job_docs,
     get_job_docs,
+    list_jobs_docs,
 )
 from src.modules.jobs.presentation.exceptions import JobException
 from src.modules.jobs.presentation.schemas import (
@@ -26,6 +28,8 @@ from src.modules.jobs.presentation.schemas import (
     ArchiveJobResponse,
     JobResponse,
     GetJobResponse,
+    JobListQuery,
+    JobListResponse,
 )
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
@@ -57,6 +61,31 @@ async def create_job(
         raise DomainException(e)
     except Exception as e:
         logger.error("An error occurred in the create job endpoint.", exc_info=e)
+        raise JobException()
+
+
+# READ — public listing (must be registered before GET /{job_id}/)
+@router.get("/", **list_jobs_docs)
+@router.get("", include_in_schema=False)
+async def list_jobs(
+    query: Annotated[JobListQuery, Depends()],
+    use_case: JobUseCases = Depends(get_job_use_cases),
+) -> JobListResponse:
+    try:
+        page = await use_case.list_public_jobs(
+            query.to_filters(), cursor=query.cursor, limit=query.limit
+        )
+        return JobListResponse(
+            data=[JobResponse.from_entity(j) for j in page.items],
+            next_cursor=page.next_cursor,
+            has_more=page.has_more,
+        )
+    except StandardException:
+        raise
+    except DomainError as e:
+        raise DomainException(e)
+    except Exception as e:
+        logger.error("An error occurred in the list jobs endpoint.", exc_info=e)
         raise JobException()
 
 

@@ -191,6 +191,8 @@ class Settings(BaseSettings):
             # JOBS — public read
             {"endpoint": "/api/v1/jobs/{job_id}/", "method": "GET"},
             {"endpoint": "/api/v1/jobs/{job_id}", "method": "GET"},
+            {"endpoint": "/api/v1/jobs/", "method": "GET"},
+            {"endpoint": "/api/v1/jobs", "method": "GET"},
         ]
 
     @computed_field

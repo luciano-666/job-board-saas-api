@@ -14,6 +14,7 @@ from src.modules.jobs.presentation.schemas import (
     CloseJobResponse,
     ArchiveJobResponse,
     GetJobResponse,
+    JobListResponse,
 )
 
 router_docs: dict[str, Any] = {
@@ -81,6 +82,20 @@ get_job_docs: dict[str, Any] = {
     "dependencies": [Security(no_authentication)],
     "status_code": HTTPStatus.OK,
     "response_model": GetJobResponse,
+    "include_in_schema": True,
+    "responses": {},
+}
+
+
+list_jobs_docs: dict[str, Any] = {
+    "summary": "Public endpoint to list job postings.",
+    "description": (
+        "List job postings with optional filters. Cursor-based pagination "
+        "(no offset). Only jobs with OPEN status are visible."
+    ),
+    "dependencies": [Security(no_authentication)],
+    "status_code": HTTPStatus.OK,
+    "response_model": JobListResponse,
     "include_in_schema": True,
     "responses": {},
 }

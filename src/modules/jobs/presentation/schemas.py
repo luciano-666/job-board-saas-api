@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from src.modules.jobs.application.enums import JobStatus, JobType
 from src.modules.jobs.domain.entities import Job
 from src.modules.jobs.domain.value_objects import SalaryRange
+from src.modules.jobs.application.dto import JobFilters
 from src.modules.shared.application.enums import ResponseMessages
 
 
@@ -149,3 +150,37 @@ class GetJobResponse(BaseModel):
     data: JobResponse
 
     model_config = ConfigDict(title="GetJobResponse", extra="forbid")
+
+
+class JobListQuery(BaseModel):
+    """Query parameters for public job listing. All fields optional."""
+
+    location: Optional[str] = Field(default=None, max_length=255)
+    job_type: Optional[JobType] = Field(default=None)
+    salary_min: Optional[int] = Field(default=None, ge=0)
+    skills: Optional[list[str]] = Field(default=None)
+    company_id: Optional[UUID] = Field(default=None)
+    search: Optional[str] = Field(default=None, max_length=255)
+    cursor: Optional[str] = Field(default=None)
+    limit: int = Field(default=20, ge=1, le=100)
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    def to_filters(self) -> JobFilters:
+        return JobFilters(
+            location=self.location,
+            job_type=self.job_type,
+            salary_min=self.salary_min,
+            skills=self.skills,
+            company_id=self.company_id,
+            search=self.search,
+        )
+
+
+class JobListResponse(BaseModel):
+    message: str = ResponseMessages.RETRIEVED.value
+    data: list[JobResponse]
+    next_cursor: Optional[str] = None
+    has_more: bool = False
+
+    model_config = ConfigDict(title="JobListResponse", extra="forbid")

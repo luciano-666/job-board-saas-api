@@ -5,6 +5,7 @@ from src.modules.jobs.application.interfaces import IJobRepository
 from src.modules.jobs.application.enums import JobType, JobStatus
 from src.modules.jobs.domain.entities import Job
 from src.modules.jobs.domain.value_objects import SalaryRange
+from src.modules.jobs.application.dto import CursorPage, JobFilters
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
     StandardException,
@@ -20,6 +21,8 @@ logger = structlog.get_logger(__name__)
 
 
 class JobUseCases:
+    MAX_PAGE_LIMIT = 100
+
     def __init__(self, repository: IJobRepository) -> None:
         self.repository = repository
 
@@ -192,6 +195,41 @@ class JobUseCases:
         except Exception as e:
             logger.error(
                 "An unexpected error occurred during the get public job use case.",
+                exc_info=e,
+            )
+            raise JobException()
+
+    # READ — public listing (candidate-facing), only OPEN jobs, cursor pagination
+    async def list_public_jobs(
+        self, filters: JobFilters, *, cursor: str | None, limit: int = 20
+    ) -> CursorPage[Job]:
+        try:
+            logger.debug("Initializing list public jobs use case.", cursor=cursor)
+
+            capped_limit = min(max(limit, 1), self.MAX_PAGE_LIMIT)
+
+            # Public listing never exposes non-OPEN jobs, regardless of
+            # what the caller passed in filters.status — same "no
+            # enumeration" principle as get_public_job_by_id.
+            filters.status = JobStatus.OPEN
+
+            page = await self.repository.list_by_filters(
+                filters, cursor=cursor, limit=capped_limit
+            )
+
+            logger.debug(f"Listed {len(page.items)} jobs successfully.")
+            return page
+        except StandardException:
+            raise
+        except DomainError as e:
+            raise DomainException(e)
+        except ValueError as e:
+            # Malformed cursor — JobCursor.decode raises ValueError
+            logger.info("Invalid pagination cursor provided.", exc_info=e)
+            raise DomainException(DomainError(str(e)))
+        except Exception as e:
+            logger.error(
+                "An unexpected error occurred during the list public jobs use case.",
                 exc_info=e,
             )
             raise JobException()
