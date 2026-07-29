@@ -18,3 +18,9 @@ def random_email() -> str:
 
 def random_id() -> uuid.UUID:
     return uuid.uuid4()
+
+
+def extract_payload(response_json: dict) -> dict:
+    """Unwrap the double-nested `data` produced by ResponseFormattingMiddleware
+    for response models that themselves have a `data` field."""
+    return response_json["details"]["data"]
