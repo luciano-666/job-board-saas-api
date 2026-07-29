@@ -13,6 +13,7 @@ from src.modules.jobs.presentation.docs import (
     publish_job_docs,
     close_job_docs,
     archive_job_docs,
+    get_job_docs,
 )
 from src.modules.jobs.presentation.exceptions import JobException
 from src.modules.jobs.presentation.schemas import (
@@ -24,6 +25,7 @@ from src.modules.jobs.presentation.schemas import (
     CloseJobResponse,
     ArchiveJobResponse,
     JobResponse,
+    GetJobResponse,
 )
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
@@ -150,4 +152,21 @@ async def archive_job(
         raise DomainException(e)
     except Exception as e:
         logger.error("An error occurred in the archive job endpoint.", exc_info=e)
+        raise JobException()
+
+
+# READ — public
+@router.get("/{job_id}/", **get_job_docs)
+@router.get("/{job_id}", include_in_schema=False)
+async def get_job(
+    job_id: UUID,
+    use_case: JobUseCases = Depends(get_job_use_cases),
+) -> GetJobResponse:
+    try:
+        result = await use_case.get_public_job_by_id(job_id)
+        return GetJobResponse(data=JobResponse.from_entity(result))
+    except StandardException:
+        raise
+    except Exception as e:
+        logger.error("An error occurred in the get job endpoint.", exc_info=e)
         raise JobException()

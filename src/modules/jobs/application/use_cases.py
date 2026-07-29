@@ -2,7 +2,7 @@ import structlog
 from uuid import UUID
 
 from src.modules.jobs.application.interfaces import IJobRepository
-from src.modules.jobs.application.enums import JobType
+from src.modules.jobs.application.enums import JobType, JobStatus
 from src.modules.jobs.domain.entities import Job
 from src.modules.jobs.domain.value_objects import SalaryRange
 from src.modules.shared.domain.entities import DomainError
@@ -169,6 +169,29 @@ class JobUseCases:
         except Exception as e:
             logger.error(
                 "An unexpected error occurred during the archive job use case.",
+                exc_info=e,
+            )
+            raise JobException()
+
+    # READ — public (candidate-facing), only OPEN jobs are visible
+    async def get_public_job_by_id(self, job_id: UUID) -> Job:
+        try:
+            logger.debug(
+                f"Initializing get public job by id use case for job: {job_id}."
+            )
+
+            job = await self.repository.get_by_id(job_id)
+            if job is None or job.status != JobStatus.OPEN:
+                logger.info(f"Job {job_id} not found or not open. Raising exception.")
+                raise JobNotFoundException(job_id=str(job_id))
+
+            logger.debug(f"Job {job_id} retrieved successfully for public view.")
+            return job
+        except StandardException:
+            raise
+        except Exception as e:
+            logger.error(
+                "An unexpected error occurred during the get public job use case.",
                 exc_info=e,
             )
             raise JobException()

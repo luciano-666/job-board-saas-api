@@ -36,3 +36,33 @@ async def test_update_job_without_auth_returns_401(client):
 # login fixture (create employer user via UserUseCases fixture + login flow).
 # Follow the same pattern as tests/modules/user/presentation/test_user_endpoints.py
 # once a shared "authenticated_employer_client" fixture exists in conftest.py.
+
+
+@pytest.mark.anyio
+async def test_get_job_public_returns_404_for_nonexistent_job(client):
+    response = await client.get("/api/v1/jobs/00000000-0000-0000-0000-000000000000/")
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+@pytest.mark.anyio
+async def test_publish_job_without_auth_returns_401(client):
+    response = await client.patch(
+        "/api/v1/jobs/00000000-0000-0000-0000-000000000000/publish/"
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.anyio
+async def test_close_job_without_auth_returns_401(client):
+    response = await client.patch(
+        "/api/v1/jobs/00000000-0000-0000-0000-000000000000/close/"
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+
+@pytest.mark.anyio
+async def test_archive_job_without_auth_returns_401(client):
+    response = await client.patch(
+        "/api/v1/jobs/00000000-0000-0000-0000-000000000000/archive/"
+    )
+    assert response.status_code == HTTPStatus.UNAUTHORIZED

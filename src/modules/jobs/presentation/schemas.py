@@ -142,3 +142,10 @@ class ArchiveJobResponse(BaseModel):
     data: JobResponse
 
     model_config = ConfigDict(title="ArchiveJobResponse", extra="forbid")
+
+
+class GetJobResponse(BaseModel):
+    message: str = ResponseMessages.RETRIEVED.value
+    data: JobResponse
+
+    model_config = ConfigDict(title="GetJobResponse", extra="forbid")

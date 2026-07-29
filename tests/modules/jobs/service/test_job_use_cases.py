@@ -300,3 +300,54 @@ async def test_archive_job_raises_not_found_when_job_missing():
 
     with pytest.raises(JobNotFoundException):
         await use_cases.archive_job(job_id=uuid4(), employer_id=uuid4())
+
+
+# ---------------------------------------------------------------------------
+# get_public_job_by_id
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_get_public_job_by_id_returns_open_job():
+    existing = make_job()
+    existing.publish()
+    use_cases, _ = make_use_cases(existing=[existing])
+
+    result = await use_cases.get_public_job_by_id(existing.id)
+
+    assert result.id == existing.id
+    assert result.status == JobStatus.OPEN
+
+
+@pytest.mark.anyio
+async def test_get_public_job_by_id_raises_not_found_for_draft_job():
+    from src.modules.jobs.presentation.exceptions import JobNotFoundException
+
+    existing = make_job()  # still DRAFT
+    use_cases, _ = make_use_cases(existing=[existing])
+
+    with pytest.raises(JobNotFoundException):
+        await use_cases.get_public_job_by_id(existing.id)
+
+
+@pytest.mark.anyio
+async def test_get_public_job_by_id_raises_not_found_for_closed_job():
+    from src.modules.jobs.presentation.exceptions import JobNotFoundException
+
+    existing = make_job()
+    existing.publish()
+    existing.close()
+    use_cases, _ = make_use_cases(existing=[existing])
+
+    with pytest.raises(JobNotFoundException):
+        await use_cases.get_public_job_by_id(existing.id)
+
+
+@pytest.mark.anyio
+async def test_get_public_job_by_id_raises_not_found_when_missing():
+    from src.modules.jobs.presentation.exceptions import JobNotFoundException
+
+    use_cases, _ = make_use_cases()
+
+    with pytest.raises(JobNotFoundException):
+        await use_cases.get_public_job_by_id(uuid4())

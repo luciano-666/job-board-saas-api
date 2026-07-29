@@ -188,6 +188,9 @@ class Settings(BaseSettings):
                 "endpoint": "/api/v1/authentication/password-reset/confirm",
                 "method": "POST",
             },
+            # JOBS — public read
+            {"endpoint": "/api/v1/jobs/{job_id}/", "method": "GET"},
+            {"endpoint": "/api/v1/jobs/{job_id}", "method": "GET"},
         ]
 
     @computed_field
