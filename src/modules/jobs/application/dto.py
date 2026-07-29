@@ -70,6 +70,10 @@ class JobFilters:
     job_type: JobType | None = field(default=None)
     salary_min: int | None = field(default=None)
     skills: list[str] | None = field(default=None)
+    # NOTE: no dedicated Company bounded context exists yet — "company" in
+    # the spec maps directly to the employer's User.id. Renamed at the API
+    # boundary as "company" per spec wording, but internally this filters
+    # by JobModel.employer_id.
     company_id: UUID | None = field(default=None)
     status: JobStatus | None = field(default=None)
     search: str | None = field(default=None)  # full-text search term (tsvector)

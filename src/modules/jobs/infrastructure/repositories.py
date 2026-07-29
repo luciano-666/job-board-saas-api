@@ -113,8 +113,11 @@ class SqlAlchemyJobRepository(IJobRepository):
             if filters.salary_min is not None:
                 conditions.append(JobModel.salary_min >= filters.salary_min)
             if filters.skills:
-                # Postgres ARRAY contains — job must have all requested skills
-                conditions.append(JobModel.skills.contains(filters.skills))
+                # Postgres ARRAY contains — job must have all requested skills.
+                # Skills are stored lowercase (see Job._normalize()), so
+                # normalize the filter input the same way before querying.
+                normalized_skills = [s.strip().lower() for s in filters.skills]
+                conditions.append(JobModel.skills.contains(normalized_skills))
             if filters.company_id is not None:
                 conditions.append(JobModel.employer_id == filters.company_id)
             if filters.search:

@@ -49,7 +49,7 @@ class FakeJobRepository:
                 if j.salary.min is not None and j.salary.min >= filters.salary_min
             ]
         if filters.skills:
-            wanted = {s.lower() for s in filters.skills}
+            wanted = {s.strip().lower() for s in filters.skills}
             items = [j for j in items if wanted.issubset(set(j.skills))]
         if filters.company_id is not None:
             items = [j for j in items if j.employer_id == filters.company_id]

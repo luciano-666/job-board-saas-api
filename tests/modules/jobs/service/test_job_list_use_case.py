@@ -172,3 +172,128 @@ async def test_list_public_jobs_filters_by_skills():
 
     ids = {j.id for j in page.items}
     assert ids == {matching.id}
+
+
+# ---------------------------------------------------------------------------
+# list_public_jobs — filter by company_id (maps to employer_id)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_list_public_jobs_filters_by_company_id():
+    employer_a = uuid4()
+    employer_b = uuid4()
+    job_a = make_job(employer_id=employer_a, status=JobStatus.OPEN)
+    job_b = make_job(employer_id=employer_b, status=JobStatus.OPEN)
+    use_cases, _ = make_use_cases(existing=[job_a, job_b])
+
+    page = await use_cases.list_public_jobs(
+        JobFilters(company_id=employer_a), cursor=None, limit=10
+    )
+
+    ids = {j.id for j in page.items}
+    assert ids == {job_a.id}
+
+
+# ---------------------------------------------------------------------------
+# list_public_jobs — combined filters (AND logic)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_list_public_jobs_combines_multiple_filters():
+    matching = make_job(
+        location="Ho Chi Minh City",
+        job_type=JobType.FULL_TIME,
+        salary=SalaryRange(min=3000, max=5000),
+        skills=["python", "fastapi"],
+        status=JobStatus.OPEN,
+    )
+    wrong_location = make_job(
+        location="Hanoi",
+        job_type=JobType.FULL_TIME,
+        salary=SalaryRange(min=3000, max=5000),
+        skills=["python", "fastapi"],
+        status=JobStatus.OPEN,
+    )
+    wrong_salary = make_job(
+        location="Ho Chi Minh City",
+        job_type=JobType.FULL_TIME,
+        salary=SalaryRange(min=1000, max=2000),
+        skills=["python", "fastapi"],
+        status=JobStatus.OPEN,
+    )
+    use_cases, _ = make_use_cases(existing=[matching, wrong_location, wrong_salary])
+
+    page = await use_cases.list_public_jobs(
+        JobFilters(
+            location="ho chi minh",
+            job_type=JobType.FULL_TIME,
+            salary_min=3000,
+            skills=["python"],
+        ),
+        cursor=None,
+        limit=10,
+    )
+
+    ids = {j.id for j in page.items}
+    assert ids == {matching.id}
+
+
+@pytest.mark.anyio
+async def test_list_public_jobs_returns_empty_when_filters_match_nothing():
+    job = make_job(location="Hanoi", status=JobStatus.OPEN)
+    use_cases, _ = make_use_cases(existing=[job])
+
+    page = await use_cases.list_public_jobs(
+        JobFilters(location="Ho Chi Minh City"), cursor=None, limit=10
+    )
+
+    assert page.items == []
+    assert page.has_more is False
+
+
+# ---------------------------------------------------------------------------
+# list_public_jobs — skills filter requires ALL skills, not just any
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_list_public_jobs_skills_filter_requires_all_skills():
+    has_both = make_job(skills=["python", "fastapi"], status=JobStatus.OPEN)
+    has_one = make_job(skills=["python"], status=JobStatus.OPEN)
+    use_cases, _ = make_use_cases(existing=[has_both, has_one])
+
+    page = await use_cases.list_public_jobs(
+        JobFilters(skills=["python", "fastapi"]), cursor=None, limit=10
+    )
+
+    ids = {j.id for j in page.items}
+    assert ids == {has_both.id}
+
+
+@pytest.mark.anyio
+async def test_list_public_jobs_skills_filter_is_case_insensitive():
+    job = make_job(skills=["python", "fastapi"], status=JobStatus.OPEN)
+    use_cases, _ = make_use_cases(existing=[job])
+
+    page = await use_cases.list_public_jobs(
+        JobFilters(skills=["PYTHON"]), cursor=None, limit=10
+    )
+
+    ids = {j.id for j in page.items}
+    assert ids == {job.id}
+
+
+@pytest.mark.anyio
+async def test_list_public_jobs_empty_skills_list_means_no_filter():
+    job_a = make_job(skills=["python"], status=JobStatus.OPEN)
+    job_b = make_job(skills=["go"], status=JobStatus.OPEN)
+    use_cases, _ = make_use_cases(existing=[job_a, job_b])
+
+    page = await use_cases.list_public_jobs(
+        JobFilters(skills=[]), cursor=None, limit=10
+    )
+
+    ids = {j.id for j in page.items}
+    assert ids == {job_a.id, job_b.id}

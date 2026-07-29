@@ -86,3 +86,37 @@ async def test_list_jobs_public_returns_200_with_empty_data(client):
 async def test_list_jobs_rejects_invalid_limit(client):
     response = await client.get("/api/v1/jobs/", params={"limit": 0})
     assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
+
+
+@pytest.mark.anyio
+async def test_list_jobs_rejects_negative_salary_min(client):
+    response = await client.get("/api/v1/jobs/", params={"salary_min": -100})
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
+
+
+@pytest.mark.anyio
+async def test_list_jobs_accepts_multiple_skills_query_params(client):
+    response = await client.get(
+        "/api/v1/jobs/", params={"skills": ["python", "fastapi"]}
+    )
+    assert response.status_code == HTTPStatus.OK
+
+
+@pytest.mark.anyio
+async def test_list_jobs_accepts_location_filter(client):
+    response = await client.get(
+        "/api/v1/jobs/", params={"location": "Ho Chi Minh City"}
+    )
+    assert response.status_code == HTTPStatus.OK
+
+
+@pytest.mark.anyio
+async def test_list_jobs_accepts_job_type_filter(client):
+    response = await client.get("/api/v1/jobs/", params={"job_type": "full_time"})
+    assert response.status_code == HTTPStatus.OK
+
+
+@pytest.mark.anyio
+async def test_list_jobs_rejects_invalid_job_type(client):
+    response = await client.get("/api/v1/jobs/", params={"job_type": "not_a_type"})
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
