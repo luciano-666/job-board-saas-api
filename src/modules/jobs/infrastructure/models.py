@@ -1,7 +1,15 @@
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import String, Text, Integer, Enum as SQLEnum, ForeignKey, Computed
+from sqlalchemy import (
+    String,
+    Text,
+    Integer,
+    Enum as SQLEnum,
+    ForeignKey,
+    Computed,
+    Index,
+)
 from sqlalchemy.dialects.postgresql import ARRAY, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,6 +22,13 @@ from src.modules.shared.infrastructure.models import BaseModel
 
 class JobModel(BaseModel):
     __tablename__ = f"{settings.APPLICATION_TABLE_PREFIX}_jobs"
+    __table_args__ = (
+        Index(
+            "ix_jobs_search_vector_gin",
+            "search_vector",
+            postgresql_using="gin",
+        ),
+    )
 
     title: Mapped[str] = mapped_column(
         String(200),
@@ -88,7 +103,8 @@ class JobModel(BaseModel):
     search_vector: Mapped[Optional[str]] = mapped_column(
         TSVECTOR,
         Computed(
-            "to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, ''))",
+            "setweight(to_tsvector('english', coalesce(title, '')), 'A') || "
+            "setweight(to_tsvector('english', coalesce(description, '')), 'B')",
             persisted=True,
         ),
         name="search_vector",

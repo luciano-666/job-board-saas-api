@@ -120,3 +120,9 @@ async def test_list_jobs_accepts_job_type_filter(client):
 async def test_list_jobs_rejects_invalid_job_type(client):
     response = await client.get("/api/v1/jobs/", params={"job_type": "not_a_type"})
     assert response.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
+
+
+@pytest.mark.anyio
+async def test_list_jobs_accepts_search_query_param(client):
+    response = await client.get("/api/v1/jobs/", params={"search": "backend engineer"})
+    assert response.status_code == HTTPStatus.OK

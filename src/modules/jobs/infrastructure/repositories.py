@@ -2,7 +2,7 @@ from typing import Optional
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select, and_, tuple_, literal
+from sqlalchemy import select, and_, tuple_, literal, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.modules.jobs.application.dto import CursorPage, JobFilters, JobCursor
@@ -122,8 +122,8 @@ class SqlAlchemyJobRepository(IJobRepository):
                 conditions.append(JobModel.employer_id == filters.company_id)
             if filters.search:
                 conditions.append(
-                    JobModel.search_vector.match(
-                        filters.search, postgresql_regconfig="english"
+                    JobModel.search_vector.op("@@")(
+                        func.websearch_to_tsquery("english", filters.search)
                     )
                 )
 

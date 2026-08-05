@@ -297,3 +297,63 @@ async def test_list_public_jobs_empty_skills_list_means_no_filter():
 
     ids = {j.id for j in page.items}
     assert ids == {job_a.id, job_b.id}
+
+
+# ---------------------------------------------------------------------------
+# list_public_jobs — full-text search filter
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_list_public_jobs_filters_by_search_term_in_title():
+    matching = make_job(title="Senior Backend Engineer", status=JobStatus.OPEN)
+    other = make_job(
+        title="Frontend Developer",
+        description="Build user interfaces with React.",
+        status=JobStatus.OPEN,
+    )
+    use_cases, _ = make_use_cases(existing=[matching, other])
+
+    page = await use_cases.list_public_jobs(
+        JobFilters(search="backend"), cursor=None, limit=10
+    )
+
+    ids = {j.id for j in page.items}
+    assert ids == {matching.id}
+
+
+@pytest.mark.anyio
+async def test_list_public_jobs_filters_by_search_term_in_description():
+    matching = make_job(
+        description="Looking for someone skilled in distributed systems.",
+        status=JobStatus.OPEN,
+    )
+    other = make_job(description="Looking for a UI/UX designer.", status=JobStatus.OPEN)
+    use_cases, _ = make_use_cases(existing=[matching, other])
+
+    page = await use_cases.list_public_jobs(
+        JobFilters(search="distributed systems"), cursor=None, limit=10
+    )
+
+    ids = {j.id for j in page.items}
+    assert ids == {matching.id}
+
+
+@pytest.mark.anyio
+async def test_list_public_jobs_search_combined_with_other_filters():
+    matching = make_job(
+        title="Backend Engineer",
+        location="Ho Chi Minh City",
+        status=JobStatus.OPEN,
+    )
+    wrong_location = make_job(
+        title="Backend Engineer", location="Hanoi", status=JobStatus.OPEN
+    )
+    use_cases, _ = make_use_cases(existing=[matching, wrong_location])
+
+    page = await use_cases.list_public_jobs(
+        JobFilters(search="backend", location="ho chi minh"), cursor=None, limit=10
+    )
+
+    ids = {j.id for j in page.items}
+    assert ids == {matching.id}
