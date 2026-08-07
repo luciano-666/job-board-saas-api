@@ -20,14 +20,35 @@ class SalaryRangeSchema(BaseModel):
 
 
 class CreateJobRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=200, examples=["Backend Engineer"])
-    description: str = Field(
-        min_length=1, examples=["Build and maintain backend services."]
+    title: str = Field(
+        title="Job Title (Required)",
+        min_length=1,
+        max_length=200,
+        examples=["Backend Engineer"],
     )
-    location: str = Field(min_length=1, max_length=255, examples=["Ho Chi Minh City"])
-    job_type: JobType = Field(examples=[JobType.FULL_TIME.value])
-    skills: list[str] = Field(min_length=1, examples=[["python", "fastapi"]])
-    salary: Optional[SalaryRangeSchema] = Field(default=None)
+    description: str = Field(
+        title="Job Description (Required)",
+        min_length=1,
+        examples=["Build and maintain backend services."],
+    )
+    location: str = Field(
+        title="Location (Required)",
+        min_length=1,
+        max_length=255,
+        examples=["Ho Chi Minh City"],
+    )
+    job_type: JobType = Field(
+        title="Job Type (Required)", examples=[JobType.FULL_TIME.value]
+    )
+    skills: list[str] = Field(
+        title="Required Skills (Required)",
+        min_length=1,
+        examples=[["python", "fastapi"]],
+    )
+    salary: Optional[SalaryRangeSchema] = Field(
+        default=None,
+        title="Salary Range (Optional)",
+    )
 
     @field_validator("skills")
     @classmethod
