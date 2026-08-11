@@ -327,7 +327,8 @@ class SessionModel(Base):
         String(255),
         name="referrer",
         comment="Referrer header value of the client",
-        nullable=False,
+        nullable=True,
+        default=None,
     )
     location: Mapped[Optional[str]] = mapped_column(
         String(255),

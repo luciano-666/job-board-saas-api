@@ -305,8 +305,12 @@ class DeviceIdMiddleware(BaseHTTPMiddleware):
                 key=settings.COOKIES_DEVICE_KEY,
                 value=device_id,
                 max_age=settings.COOKIES_REFRESH_TOKEN_MAX_AGE,
-                path=settings.COOKIES_REFRESH_TOKEN_PATH,
-                domain=settings.COOKIES_DOMAIN,
+                path="/",
+                domain=(
+                    None
+                    if settings.APPLICATION_ENVIRONMENT_DEBUG
+                    else settings.COOKIES_DOMAIN
+                ),
                 secure=not settings.APPLICATION_ENVIRONMENT_DEBUG,
                 httponly=True,
                 samesite="strict",

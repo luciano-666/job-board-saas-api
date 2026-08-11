@@ -60,12 +60,16 @@ async def set_cookies(response: Response, session: Session) -> None:
         if session.refresh_token.token is None:
             raise ValueError("Refresh token must be generated before setting cookies.")
 
+        cookie_domain = (
+            None if settings.APPLICATION_ENVIRONMENT_DEBUG else settings.COOKIES_DOMAIN
+        )
+
         response.set_cookie(
             key=settings.COOKIES_TOKEN_TYPE_KEY,
             value=session.token_type,
             max_age=settings.COOKIES_ACCESS_TOKEN_MAX_AGE,
             path=settings.COOKIES_ACCESS_TOKEN_PATH,
-            domain=settings.COOKIES_DOMAIN,
+            domain=cookie_domain,
             secure=not settings.APPLICATION_ENVIRONMENT_DEBUG,
             httponly=True,
             samesite="lax",
@@ -76,7 +80,7 @@ async def set_cookies(response: Response, session: Session) -> None:
             value=session.refresh_token.access_token.token,
             max_age=settings.COOKIES_ACCESS_TOKEN_MAX_AGE,
             path=settings.COOKIES_ACCESS_TOKEN_PATH,
-            domain=settings.COOKIES_DOMAIN,
+            domain=cookie_domain,
             secure=not settings.APPLICATION_ENVIRONMENT_DEBUG,
             httponly=True,
             samesite="lax",
@@ -87,7 +91,7 @@ async def set_cookies(response: Response, session: Session) -> None:
             value=session.refresh_token.token,
             max_age=settings.COOKIES_REFRESH_TOKEN_MAX_AGE,
             path=settings.COOKIES_REFRESH_TOKEN_PATH,
-            domain=settings.COOKIES_DOMAIN,
+            domain=cookie_domain,
             secure=not settings.APPLICATION_ENVIRONMENT_DEBUG,
             httponly=True,
             samesite="strict",
@@ -101,10 +105,13 @@ async def set_cookies(response: Response, session: Session) -> None:
 
 async def delete_cookies(response: Response) -> None:
     try:
+        cookie_domain = (
+            None if settings.APPLICATION_ENVIRONMENT_DEBUG else settings.COOKIES_DOMAIN
+        )
         response.delete_cookie(
             key=settings.COOKIES_TOKEN_TYPE_KEY,
             path=settings.COOKIES_ACCESS_TOKEN_PATH,
-            domain=settings.COOKIES_DOMAIN,
+            domain=cookie_domain,
             secure=not settings.APPLICATION_ENVIRONMENT_DEBUG,
             httponly=True,
             samesite="lax",
@@ -113,7 +120,7 @@ async def delete_cookies(response: Response) -> None:
         response.delete_cookie(
             key=settings.COOKIES_ACCESS_TOKEN_KEY,
             path=settings.COOKIES_ACCESS_TOKEN_PATH,
-            domain=settings.COOKIES_DOMAIN,
+            domain=cookie_domain,
             secure=not settings.APPLICATION_ENVIRONMENT_DEBUG,
             httponly=True,
             samesite="lax",
@@ -122,7 +129,7 @@ async def delete_cookies(response: Response) -> None:
         response.delete_cookie(
             key=settings.COOKIES_REFRESH_TOKEN_KEY,
             path=settings.COOKIES_REFRESH_TOKEN_PATH,
-            domain=settings.COOKIES_DOMAIN,
+            domain=cookie_domain,
             secure=not settings.APPLICATION_ENVIRONMENT_DEBUG,
             httponly=True,
             samesite="lax",

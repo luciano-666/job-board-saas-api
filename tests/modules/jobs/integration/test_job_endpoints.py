@@ -126,3 +126,40 @@ async def test_list_jobs_rejects_invalid_job_type(client):
 async def test_list_jobs_accepts_search_query_param(client):
     response = await client.get("/api/v1/jobs/", params={"search": "backend engineer"})
     assert response.status_code == HTTPStatus.OK
+
+
+@pytest.mark.anyio
+async def test_create_job_as_employer_returns_201(employer_client):
+    response = await employer_client.post("/api/v1/jobs/", json=valid_create_payload())
+    assert response.status_code == HTTPStatus.CREATED
+
+
+@pytest.mark.anyio
+async def test_publish_job_as_owner_employer_returns_200(employer_client):
+    create_response = await employer_client.post(
+        "/api/v1/jobs/", json=valid_create_payload()
+    )
+    job_id = create_response.json()["details"]["data"]["data"]["id"]
+
+    response = await employer_client.patch(f"/api/v1/jobs/{job_id}/publish/")
+    assert response.status_code == HTTPStatus.OK
+
+
+@pytest.mark.anyio
+async def test_created_job_appears_in_public_listing_after_publish(employer_client):
+    create_response = await employer_client.post(
+        "/api/v1/jobs/", json=valid_create_payload(title="Unique Searchable Title")
+    )
+    job_id = create_response.json()["details"]["data"]["data"]["id"]
+    await employer_client.patch(f"/api/v1/jobs/{job_id}/publish/")
+
+    list_response = await employer_client.get("/api/v1/jobs/")
+    payload = list_response.json()["details"]["data"]
+    ids = {job["id"] for job in payload["data"]}
+    assert job_id in ids
+
+
+@pytest.mark.anyio
+async def test_create_job_as_candidate_returns_403(candidate_client):
+    response = await candidate_client.post("/api/v1/jobs/", json=valid_create_payload())
+    assert response.status_code == HTTPStatus.FORBIDDEN
