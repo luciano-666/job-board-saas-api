@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.18.4",
+    "celery[redis]>=5.3.1",
     "fastapi[standard]>=0.136.3",
     "jwcrypto>=1.5.7",
     "orjson>=3.11.9",

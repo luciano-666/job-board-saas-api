@@ -62,6 +62,26 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = ""
 
+    # CELERY — broker/backend URLs derived from Redis settings + dedicated
+    # DB indexes so queue data stays isolated from the app's cache Redis (DB 0).
+    CELERY_BROKER_DB: int = 1
+    CELERY_RESULT_BACKEND_DB: int = 2
+    CELERY_TASK_ALWAYS_EAGER: bool = False  # True only in tests, via .env.test
+
+    @computed_field
+    @property
+    def CELERY_BROKER_URL(self) -> str:
+        auth = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
+        return (
+            f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.CELERY_BROKER_DB}"
+        )
+
+    @computed_field
+    @property
+    def CELERY_RESULT_BACKEND(self) -> str:  # noqa
+        auth = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
+        return f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.CELERY_RESULT_BACKEND_DB}"
+
     # Sentry — optional, no-op when unset (local dev)
     SENTRY_DSN: AnyUrl | None = None
 

@@ -43,6 +43,16 @@ services:
       db:
         condition: service_healthy
 
+  celery-worker:
+    build: .
+    command: celery -A src.core.celery_app worker --loglevel=info
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
  # Mailtrap SMTP sandbox — replace MailHog.
   # Requires MAILTRAP_USER and MAILTRAP_PASSWORD from your Mailtrap inbox credentials.
   # Alternatively, point SMTP_HOST/PORT directly at sandbox.smtp.mailtrap.io in .env
