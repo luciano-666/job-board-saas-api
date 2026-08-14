@@ -13,6 +13,9 @@ from src.modules.user.infrastructure.repositories import SqlAlchemyUserRepositor
 from src.modules.jobs.application.interfaces import IJobRepository
 from src.modules.jobs.infrastructure.repositories import SqlAlchemyJobRepository
 
+from src.modules.shared.application.interfaces import IUnitOfWork
+from src.modules.shared.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
+
 
 def get_authentication_repository(
     session: AsyncSession = Depends(get_async_session),
@@ -39,3 +42,9 @@ def get_shared_use_cases(
     return SharedUseCases(
         user_repository=user_repository, job_repository=job_repository
     )
+
+
+def get_unit_of_work(
+    session: AsyncSession = Depends(get_async_session),
+) -> IUnitOfWork:
+    return SqlAlchemyUnitOfWork(session=session)

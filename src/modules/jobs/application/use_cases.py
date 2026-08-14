@@ -1,3 +1,4 @@
+from src.modules.shared.application.interfaces import IUnitOfWork
 import structlog
 from uuid import UUID
 
@@ -23,8 +24,9 @@ logger = structlog.get_logger(__name__)
 class JobUseCases:
     MAX_PAGE_LIMIT = 100
 
-    def __init__(self, repository: IJobRepository) -> None:
+    def __init__(self, repository: IJobRepository, uow: IUnitOfWork) -> None:
         self.repository = repository
+        self.uow = uow
 
     # CREATE
     async def create_job(self, job: Job) -> Job:
@@ -119,16 +121,22 @@ class JobUseCases:
             logger.debug(f"Initializing publish job use case for job: {job_id}.")
 
             job = await self._get_owned_job(job_id, employer_id)
-            job.publish()
+            job.publish()  # records JobPublishedEvent internally
             await self.repository.update(job)
+
+            self.uow.track(job)
+            await self.uow.commit()  # events dispatched only after this succeeds
 
             logger.debug(f"Job {job_id} published successfully.")
             return job
         except StandardException:
+            await self.uow.rollback()
             raise
         except DomainError as e:
+            await self.uow.rollback()
             raise DomainException(e)
         except Exception as e:
+            await self.uow.rollback()
             logger.error(
                 "An unexpected error occurred during the publish job use case.",
                 exc_info=e,

@@ -1,3 +1,4 @@
+from src.modules.jobs.domain.events import JobPublishedEvent
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, UTC
 from uuid import UUID, uuid4
@@ -5,6 +6,7 @@ from uuid import UUID, uuid4
 from src.modules.shared.domain.entities import DomainError
 from src.modules.jobs.application.enums import JobStatus, JobType
 from src.modules.jobs.domain.value_objects import SalaryRange
+from src.modules.shared.domain.events import DomainEvent
 
 
 @dataclass(kw_only=True, slots=True)
@@ -15,6 +17,10 @@ class Job:
     job_type: JobType
     skills: list[str]
     employer_id: UUID
+
+    _domain_events: list[DomainEvent] = field(
+        default_factory=list, repr=False, compare=False
+    )
 
     # Optional — either bound may be omitted
     salary: SalaryRange = field(default_factory=lambda: SalaryRange())
@@ -55,6 +61,10 @@ class Job:
         if not self.skills:
             raise DomainError("Job must have at least one skill.")
 
+    def pull_domain_events(self) -> list[DomainEvent]:
+        events, self._domain_events = self._domain_events, []
+        return events
+
     # ------------------------------------------------------------------
     # Status transitions
     #   draft  -> open      (publish)
@@ -71,6 +81,9 @@ class Job:
             raise DomainError("Only a draft job can be published.")
         self.status = JobStatus.OPEN
         self._touch()
+        self._domain_events.append(
+            JobPublishedEvent(job_id=self.id, employer_id=self.employer_id)
+        )
 
     def close(self) -> None:
         """Transition from open to closed."""

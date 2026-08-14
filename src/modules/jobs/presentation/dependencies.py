@@ -1,3 +1,5 @@
+from src.modules.shared.presentation.dependencies import get_unit_of_work
+from src.modules.shared.application.interfaces import IUnitOfWork
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,5 +17,6 @@ def get_job_repository(
 
 def get_job_use_cases(
     repository: IJobRepository = Depends(get_job_repository),
+    uow: IUnitOfWork = Depends(get_unit_of_work),
 ) -> JobUseCases:
-    return JobUseCases(repository=repository)
+    return JobUseCases(repository=repository, uow=uow)

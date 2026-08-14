@@ -37,20 +37,23 @@ async def get_async_session() -> AsyncIterator[AsyncSession]:
     async with PGAsyncSession() as session:
         try:
             yield session
-            await session.commit()
+            # No implicit commit here anymore — the UnitOfWork commits
+            # explicitly. If a use case forgets to call uow.commit(),
+            # the transaction simply rolls back on session close, which
+            # is the safe default (fail-closed, not fail-open).
         except StandardException:
             await session.rollback()
             raise
         except SQLAlchemyError as e:
             logger.error(
-                "An asynchronous database error occurred during the session.",
+                "An asynchronous database error occurred.",
                 exc_info=e,
             )
             await session.rollback()
             raise
         except Exception as e:
             logger.error(
-                "An unexpected error occurred during the asynchronous database session.",
+                "An unexpected error occurred.",
                 exc_info=e,
             )
             await session.rollback()
