@@ -8,7 +8,7 @@ from src.modules.jobs.application.enums import JobStatus, JobType
 from src.modules.jobs.application.use_cases import JobUseCases
 from src.modules.jobs.domain.entities import Job
 from src.modules.jobs.domain.value_objects import SalaryRange
-from tests.modules.jobs.fakes import FakeJobRepository
+from tests.modules.jobs.fakes import FakeJobRepository, FakeUnitOfWork
 
 
 def make_job(employer_id=None, **overrides) -> Job:
@@ -27,7 +27,8 @@ def make_job(employer_id=None, **overrides) -> Job:
 
 def make_use_cases(existing: list[Job] | None = None):
     repo = FakeJobRepository(existing)
-    return JobUseCases(repository=repo), repo
+    uow = FakeUnitOfWork()
+    return JobUseCases(repository=repo, uow=uow), repo
 
 
 # ---------------------------------------------------------------------------

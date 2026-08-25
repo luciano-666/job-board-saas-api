@@ -101,13 +101,13 @@ def _init_sentry() -> None:
 async def lifespan(app: FastAPI):
     configure_logging()
     _init_sentry()
-    from src.core.event_bus import event_bus
-    from src.modules.jobs.domain.events import JobPublishedEvent
-    from src.modules.jobs.infrastructure.event_handlers import (
-        send_job_published_notification,
-    )
+    # from src.core.event_bus import event_bus
+    # from src.modules.jobs.domain.events import JobPublishedEvent
+    # from src.modules.jobs.infrastructure.event_handlers import (
+    #     send_job_published_notification,
+    # )
 
-    event_bus.subscribe(JobPublishedEvent, send_job_published_notification)
+    # event_bus.subscribe(JobPublishedEvent, send_job_published_notification)
     yield
 
 

@@ -2,13 +2,15 @@ from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import (
+    Computed,
+    ForeignKey,
+    Index,
+    Integer,
     String,
     Text,
-    Integer,
+)
+from sqlalchemy import (
     Enum as SQLEnum,
-    ForeignKey,
-    Computed,
-    Index,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column

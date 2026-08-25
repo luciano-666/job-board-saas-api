@@ -2,10 +2,10 @@ from typing import Optional
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select, and_, tuple_, literal, func
+from sqlalchemy import and_, func, literal, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.modules.jobs.application.dto import CursorPage, JobFilters, JobCursor
+from src.modules.jobs.application.dto import CursorPage, JobCursor, JobFilters
 from src.modules.jobs.application.interfaces import IJobRepository
 from src.modules.jobs.domain.entities import Job
 from src.modules.jobs.infrastructure.models import JobModel

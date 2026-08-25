@@ -1,10 +1,41 @@
 """In-memory fakes for Jobs service-layer tests."""
 
-from typing import Optional
+from typing import Optional, Any
 from uuid import UUID
 
 from src.modules.jobs.application.dto import CursorPage, JobFilters, JobCursor
 from src.modules.jobs.domain.entities import Job
+
+class FakeUnitOfWork:
+    """Pure-memory IUnitOfWork implementation.
+
+    Mimics SqlAlchemyUnitOfWork's contract: commit() pulls and records
+    domain events from tracked entities (instead of publishing to a real
+    event bus), so tests can assert on `dispatched_events` without any
+    infra dependency.
+    """
+
+    def __init__(self) -> None:
+        self._tracked_entities: list[Any] = []
+        self.committed = False
+        self.rolled_back = False
+        self.dispatched_events: list[Any] = []
+
+    def track(self, entity: Any) -> None:
+        self._tracked_entities.append(entity)
+
+    async def commit(self) -> None:
+        self.committed = True
+        for entity in self._tracked_entities:
+            pull = getattr(entity, "pull_domain_events", None)
+            if pull is None:
+                continue
+            self.dispatched_events.extend(pull())
+        self._tracked_entities.clear()
+
+    async def rollback(self) -> None:
+        self.rolled_back = True
+        self._tracked_entities.clear()
 
 
 class FakeJobRepository:
