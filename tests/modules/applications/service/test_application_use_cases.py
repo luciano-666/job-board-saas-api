@@ -13,7 +13,10 @@ from src.modules.applications.presentation.exceptions import (
 from src.modules.jobs.application.enums import JobStatus, JobType
 from src.modules.jobs.domain.entities import Job
 from src.modules.jobs.domain.value_objects import SalaryRange
-from tests.modules.applications.fakes import FakeApplicationRepository
+from tests.modules.applications.fakes import (
+    FakeApplicationRepository,
+    FakeSharedUseCases,
+)
 
 
 def make_job(*, status: JobStatus = JobStatus.OPEN, **overrides) -> Job:
@@ -34,22 +37,22 @@ def make_job(*, status: JobStatus = JobStatus.OPEN, **overrides) -> Job:
     return job
 
 
-class FakeSharedUseCasesForApplications:
-    """Minimal ISharedUseCases stand-in — only get_job_by_id is needed here."""
+# class FakeSharedUseCasesForApplications:
+#     """Minimal ISharedUseCases stand-in — only get_job_by_id is needed here."""
 
-    def __init__(self, jobs: list[Job] | None = None) -> None:
-        self._jobs = {j.id: j for j in (jobs or [])}
+#     def __init__(self, jobs: list[Job] | None = None) -> None:
+#         self._jobs = {j.id: j for j in (jobs or [])}
 
-    async def get_job_by_id(self, id):
-        return self._jobs.get(id)
+#     async def get_job_by_id(self, id):
+#         return self._jobs.get(id)
 
 
 def make_use_cases(
     *, applications=None, jobs=None
 ) -> tuple[ApplicationUseCases, FakeApplicationRepository]:
     repo = FakeApplicationRepository(applications)
-    shared = FakeSharedUseCasesForApplications(jobs)
-    return ApplicationUseCases(repository=repo, shared_service=shared), repo  # ty:ignore[invalid-argument-type]
+    shared = FakeSharedUseCases(jobs)
+    return ApplicationUseCases(repository=repo, shared_service=shared), repo
 
 
 # ---------------------------------------------------------------------------

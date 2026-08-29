@@ -4,6 +4,8 @@ from typing import Optional
 from uuid import UUID
 
 from src.modules.applications.domain.entities import Application
+from src.modules.jobs.domain.entities import Job
+from src.modules.user.domain.entities import User
 
 
 class FakeApplicationRepository:
@@ -28,3 +30,31 @@ class FakeApplicationRepository:
 
     async def update(self, application: Application) -> None:
         self._store[application.id] = application
+
+
+class FakeSharedUseCases:
+    """Minimal ISharedUseCases stand-in for ApplicationUseCases tests.
+
+    Only get_job_by_id is exercised by ApplicationUseCases today, but all
+    ISharedUseCases methods are implemented (even if unused) so this fake
+    stays valid if the Protocol is extended later.
+    """
+
+    def __init__(self, jobs: list[Job] | None = None) -> None:
+        self._jobs: dict[UUID, Job] = {j.id: j for j in (jobs or [])}
+
+    async def get_job_by_id(self, id: UUID) -> Job | None:
+        return self._jobs.get(id)
+
+    async def get_user_by_id(self, id: UUID) -> User | None:
+        return None
+
+    async def get_user_by_email(self, email: str) -> User:
+        raise NotImplementedError(
+            "get_user_by_email is not used by ApplicationUseCases tests."
+        )
+
+    async def update_user_password(self, user: User) -> None:
+        raise NotImplementedError(
+            "update_user_password is not used by ApplicationUseCases tests."
+        )
