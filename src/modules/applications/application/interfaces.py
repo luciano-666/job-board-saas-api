@@ -12,3 +12,6 @@ class IApplicationRepository(Protocol):
     async def exists_by_candidate_and_job(
         self, candidate_id: UUID, job_id: UUID
     ) -> bool: ...
+
+    # UPDATE
+    async def update(self, application: Application) -> None: ...

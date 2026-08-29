@@ -25,3 +25,6 @@ class FakeApplicationRepository:
             a.candidate_id == candidate_id and a.job_id == job_id
             for a in self._store.values()
         )
+
+    async def update(self, application: Application) -> None:
+        self._store[application.id] = application

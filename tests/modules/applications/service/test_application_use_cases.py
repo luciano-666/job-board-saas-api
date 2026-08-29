@@ -27,7 +27,7 @@ def make_job(*, status: JobStatus = JobStatus.OPEN, **overrides) -> Job:
         salary=SalaryRange(min=2000, max=4000),
     )
     defaults.update(overrides)
-    job = Job(**defaults)
+    job = Job(**defaults)  # ty: ignore[invalid-argument-type]
     if status == JobStatus.OPEN:
         job.publish()
     job.status = status  # allow forcing DRAFT/CLOSED for negative tests
