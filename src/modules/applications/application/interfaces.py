@@ -15,3 +15,10 @@ class IApplicationRepository(Protocol):
 
     # UPDATE
     async def update(self, application: Application) -> None: ...
+
+
+class IFileTypeSniffer(Protocol):
+    async def sniff(self, content: bytes) -> str:
+        """Return the real MIME type detected from file bytes (magic number),
+        never trusting client-supplied Content-Type or filename extension."""
+        ...
