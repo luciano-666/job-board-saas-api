@@ -2,6 +2,7 @@
 
 from typing import Optional
 from uuid import UUID
+from datetime import timedelta
 
 from src.modules.applications.domain.entities import Application
 from src.modules.jobs.domain.entities import Job
@@ -58,3 +59,25 @@ class FakeSharedUseCases:
         raise NotImplementedError(
             "update_user_password is not used by ApplicationUseCases tests."
         )
+
+
+class FakeFileStorageRepository:
+    """Pure-memory IFileStorageRepository implementation."""
+
+    def __init__(self) -> None:
+        self._store: dict[str, tuple[bytes, str]] = {}
+        self.uploaded_keys: list[str] = []
+        self.deleted_keys: list[str] = []
+
+    async def upload(self, *, key: str, content: bytes, content_type: str) -> None:
+        self._store[key] = (content, content_type)
+        self.uploaded_keys.append(key)
+
+    async def generate_presigned_url(self, *, key: str, expires_in: timedelta) -> str:
+        if key not in self._store:
+            raise KeyError(f"Object '{key}' does not exist in fake storage.")
+        return f"https://fake-storage.local/{key}?expires_in={int(expires_in.total_seconds())}"
+
+    async def delete(self, *, key: str) -> None:
+        self._store.pop(key, None)
+        self.deleted_keys.append(key)

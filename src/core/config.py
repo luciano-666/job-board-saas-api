@@ -138,6 +138,18 @@ class Settings(BaseSettings):
     SECURITY_ADMIN_EMAIL: str
     SECURITY_ADMIN_PASSWORD: str
 
+    # STORAGE — Garage (S3-compatible, self-hosted)
+    STORAGE_ENDPOINT_URL: (
+        str  # e.g. "http://garage:3900" (dev) or public Garage endpoint (prod)
+    )
+    STORAGE_REGION: str = (
+        "garage"  # Garage requires a region string but ignores its value
+    )
+    STORAGE_ACCESS_KEY_ID: str
+    STORAGE_SECRET_ACCESS_KEY: str
+    STORAGE_BUCKET_NAME: str
+    STORAGE_PRESIGN_TTL_SECONDS: int = 3600  # 1 hour, per spec
+
     @model_validator(mode="before")
     @classmethod
     def parse_list_fields(cls, values: dict) -> dict:

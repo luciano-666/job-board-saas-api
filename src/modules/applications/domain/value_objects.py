@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from uuid import UUID
+
 from src.modules.shared.presentation.exceptions import DomainError
 
 
@@ -30,3 +32,16 @@ class CvFile:
             raise DomainError("CV file must not be empty.")
         if self.size_bytes > self.MAX_SIZE_BYTES:
             raise DomainError("CV file must not exceed 5MB.")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CvStorageKey:
+    """Deterministic object key for a candidate's CV upload.
+    Kept in the domain layer since it's pure business naming logic,
+    not an I/O concern."""
+
+    candidate_id: UUID
+    application_id: UUID
+
+    def __str__(self) -> str:
+        return f"applications/{self.candidate_id}/{self.application_id}.pdf"

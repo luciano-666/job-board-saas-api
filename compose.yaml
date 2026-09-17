@@ -52,6 +52,18 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
+  
+  garage:
+    image: dxflrs/garage:v2.3.0
+    restart: always
+    ports:
+      - "3900:3900"   # S3 API
+      - "3901:3901"   # RPC
+      - "3902:3902"   # Web (optional)
+    volumes:
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+      - ./garage.toml:/etc/garage.toml
 
  # Mailtrap SMTP sandbox — replace MailHog.
   # Requires MAILTRAP_USER and MAILTRAP_PASSWORD from your Mailtrap inbox credentials.
@@ -72,4 +84,8 @@ services:
 volumes:
   app-db-data:
   redis-data:
+    driver: local
+  garage-meta:
+    driver: local
+  garage-data:
     driver: local
