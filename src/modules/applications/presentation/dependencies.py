@@ -9,7 +9,7 @@ from src.modules.applications.application.interfaces import (
 )
 from src.modules.applications.application.use_cases import ApplicationUseCases
 from src.modules.applications.infrastructure.repositories import (
-    SqlAlchemyApplicationRepository,  # implement này nếu chưa có (APP-4)
+    SqlAlchemyApplicationRepository,
 )
 from src.modules.applications.infrastructure.storage import GarageFileStorageRepository
 from src.modules.applications.infrastructure.validators import (
