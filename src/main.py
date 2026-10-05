@@ -32,6 +32,7 @@ from src.modules.authentication.presentation.routers import (
 )
 from src.modules.user.presentation.routers import router as user_router
 from src.modules.jobs.presentation.routers import router as jobs_router
+from src.modules.applications.presentation.routers import router as applications_router
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -132,7 +133,7 @@ app.add_middleware(ResponseFormattingMiddleware)
 app.add_middleware(DeviceIdMiddleware)
 
 # ROUTERS
-routers = [authentication_router, user_router, jobs_router]
+routers = [authentication_router, user_router, jobs_router, applications_router]
 
 for router in routers:
     app.include_router(router)

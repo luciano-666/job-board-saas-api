@@ -3,6 +3,8 @@ from uuid import UUID
 from datetime import timedelta
 
 from src.modules.applications.domain.entities import Application
+from src.modules.jobs.application.dto import CursorPage
+from src.modules.applications.application.dto import ApplicationFilters
 
 
 class IApplicationRepository(Protocol):
@@ -16,6 +18,10 @@ class IApplicationRepository(Protocol):
 
     # UPDATE
     async def update(self, application: Application) -> None: ...
+
+    async def list_by_filters(
+        self, filters: ApplicationFilters, *, cursor: str | None, limit: int = 20
+    ) -> CursorPage[Application]: ...
 
 
 class IFileTypeSniffer(Protocol):

@@ -2,7 +2,7 @@ from typing import Optional
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import select, and_, literal, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.modules.applications.application.interfaces import IApplicationRepository
@@ -10,6 +10,8 @@ from src.modules.applications.domain.entities import Application
 from src.modules.applications.infrastructure.models import ApplicationModel
 from src.modules.applications.presentation.exceptions import ApplicationException
 from src.modules.shared.presentation.exceptions import StandardException
+from src.modules.applications.application.dto import ApplicationCursor, ApplicationFilters
+from src.modules.jobs.application.dto import CursorPage
 
 logger = structlog.get_logger(__name__)
 
@@ -123,5 +125,69 @@ class SqlAlchemyApplicationRepository(IApplicationRepository):
         except Exception as e:
             logger.error(
                 "An error occurred in the update application repository.", exc_info=e
+            )
+            raise ApplicationException()
+
+    async def list_by_filters(
+        self,
+        filters: ApplicationFilters,
+        *,
+        cursor: str | None,
+        limit: int = 20,
+    ) -> CursorPage[Application]:
+        try:
+            logger.info("Listing applications by filters with cursor pagination.")
+
+            conditions = [ApplicationModel.is_active.is_(True)]
+
+            if filters.job_id is not None:
+                conditions.append(ApplicationModel.job_id == filters.job_id)
+            if filters.candidate_id is not None:
+                conditions.append(ApplicationModel.candidate_id == filters.candidate_id)
+            if filters.status is not None:
+                conditions.append(ApplicationModel.status == filters.status)
+
+            if cursor is not None:
+                decoded = ApplicationCursor.decode(cursor)
+                conditions.append(
+                    tuple_(ApplicationModel.created_at, ApplicationModel.id)
+                    < tuple_(
+                        literal(decoded.created_at), literal(decoded.application_id)
+                    )
+                )
+
+            statement = (
+                select(ApplicationModel)
+                .where(and_(*conditions))
+                .order_by(
+                    ApplicationModel.created_at.desc(), ApplicationModel.id.desc()
+                )
+                .limit(limit + 1)
+            )
+
+            result = await self.session.execute(statement)
+            models = list(result.scalars().all())
+
+            has_more = len(models) > limit
+            page_models = models[:limit]
+            items = [m.to_entity() for m in page_models]
+
+            next_cursor = None
+            if has_more and items:
+                last = items[-1]
+                next_cursor = ApplicationCursor(
+                    created_at=last.created_at, application_id=last.id
+                ).encode()
+
+            logger.info(f"Listed {len(items)} applications successfully.")
+            return CursorPage(items=items, next_cursor=next_cursor, has_more=has_more)
+        except StandardException:
+            raise
+        except ValueError:
+            raise
+        except Exception as e:
+            logger.error(
+                "An error occurred in the list applications by filters repository.",
+                exc_info=e,
             )
             raise ApplicationException()

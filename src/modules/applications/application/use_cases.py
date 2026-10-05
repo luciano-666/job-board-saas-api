@@ -1,6 +1,8 @@
 import structlog
 from uuid import UUID, uuid4
+from datetime import timedelta
 
+from src.core.config import settings
 from src.modules.applications.application.interfaces import (
     IApplicationRepository,
     IFileStorageRepository,
@@ -9,8 +11,17 @@ from src.modules.applications.application.interfaces import (
 from src.modules.applications.application.services import validate_cv_upload
 from src.modules.applications.domain.entities import Application
 from src.modules.applications.domain.value_objects import CvStorageKey
+from src.modules.applications.application.dto import (
+    ApplicationFilters,
+    ApplicationView,
+)
+from src.modules.jobs.application.dto import CursorPage
 from src.modules.jobs.application.enums import JobStatus
 from src.modules.jobs.presentation.exceptions import JobNotFoundException
+from src.modules.jobs.presentation.exceptions import (
+    JobNotFoundException,
+    JobNotOwnedException,
+)
 from src.modules.shared.domain.entities import DomainError
 from src.modules.shared.presentation.exceptions import (
     StandardException,
@@ -27,6 +38,8 @@ logger = structlog.get_logger(__name__)
 
 
 class ApplicationUseCases:
+    MAX_PAGE_LIMIT = 100
+
     def __init__(
         self,
         repository: IApplicationRepository,
@@ -133,6 +146,111 @@ class ApplicationUseCases:
         except Exception as e:
             logger.error(
                 "An unexpected error occurred during the apply_to_job use case.",
+                exc_info=e,
+            )
+            raise ApplicationException()
+
+    async def _to_view(self, application: Application) -> ApplicationView:
+        """Attach a freshly generated presigned URL to a domain entity.
+        Never cache the result — TTL is short and per-request by design."""
+        url = await self.file_storage.generate_presigned_url(
+            key=application.cv_url,
+            expires_in=timedelta(seconds=settings.STORAGE_PRESIGN_TTL_SECONDS),
+        )
+        return ApplicationView(application=application, cv_download_url=url)
+
+    # ------------------------------------------------------------------
+    # READ — employer view, owner-only, cursor pagination
+    # ------------------------------------------------------------------
+    async def list_applications_for_job(
+        self,
+        *,
+        job_id: UUID,
+        employer_id: UUID,
+        cursor: str | None,
+        limit: int = 20,
+    ) -> CursorPage[ApplicationView]:
+        try:
+            logger.debug(
+                f"Initializing list applications for job use case: job={job_id}."
+            )
+
+            job = await self.shared_service.get_job_by_id(job_id)
+            if job is None:
+                raise JobNotFoundException(job_id=str(job_id))
+
+            if job.employer_id != employer_id:
+                logger.info(
+                    f"Employer {employer_id} attempted to list applications for "
+                    f"job {job_id} owned by {job.employer_id}."
+                )
+                raise JobNotOwnedException()
+
+            capped_limit = min(max(limit, 1), self.MAX_PAGE_LIMIT)
+
+            page = await self.repository.list_by_filters(
+                ApplicationFilters(job_id=job_id),
+                cursor=cursor,
+                limit=capped_limit,
+            )
+
+            views = [await self._to_view(a) for a in page.items]
+
+            logger.debug(f"Listed {len(views)} applications for job {job_id}.")
+            return CursorPage(
+                items=views, next_cursor=page.next_cursor, has_more=page.has_more
+            )
+        except StandardException:
+            raise
+        except ValueError as e:
+            logger.info("Invalid pagination cursor provided.", exc_info=e)
+            raise DomainException(DomainError(str(e)))
+        except Exception as e:
+            logger.error(
+                "An unexpected error occurred during list_applications_for_job.",
+                exc_info=e,
+            )
+            raise ApplicationException()
+
+    # ------------------------------------------------------------------
+    # READ — candidate view, always "my own", cursor pagination
+    # ------------------------------------------------------------------
+    async def list_my_applications(
+        self,
+        *,
+        candidate_id: UUID,
+        cursor: str | None,
+        limit: int = 20,
+    ) -> CursorPage[ApplicationView]:
+        try:
+            logger.debug(
+                f"Initializing list my applications use case: candidate={candidate_id}."
+            )
+
+            capped_limit = min(max(limit, 1), self.MAX_PAGE_LIMIT)
+
+            page = await self.repository.list_by_filters(
+                ApplicationFilters(candidate_id=candidate_id),
+                cursor=cursor,
+                limit=capped_limit,
+            )
+
+            views = [await self._to_view(a) for a in page.items]
+
+            logger.debug(
+                f"Listed {len(views)} applications for candidate {candidate_id}."
+            )
+            return CursorPage(
+                items=views, next_cursor=page.next_cursor, has_more=page.has_more
+            )
+        except StandardException:
+            raise
+        except ValueError as e:
+            logger.info("Invalid pagination cursor provided.", exc_info=e)
+            raise DomainException(DomainError(str(e)))
+        except Exception as e:
+            logger.error(
+                "An unexpected error occurred during list_my_applications.",
                 exc_info=e,
             )
             raise ApplicationException()

@@ -8,6 +8,12 @@ from src.modules.applications.domain.entities import Application
 from src.modules.jobs.domain.entities import Job
 from src.modules.user.domain.entities import User
 
+from src.modules.applications.application.dto import (
+    ApplicationCursor,
+    ApplicationFilters,
+)
+from src.modules.jobs.application.dto import CursorPage
+
 
 class FakeApplicationRepository:
     """Pure-memory IApplicationRepository implementation."""
@@ -31,6 +37,44 @@ class FakeApplicationRepository:
 
     async def update(self, application: Application) -> None:
         self._store[application.id] = application
+
+    async def list_by_filters(
+        self,
+        filters: ApplicationFilters,
+        *,
+        cursor: str | None,
+        limit: int = 20,
+    ) -> CursorPage[Application]:
+        items = list(self._store.values())
+
+        if filters.job_id is not None:
+            items = [a for a in items if a.job_id == filters.job_id]
+        if filters.candidate_id is not None:
+            items = [a for a in items if a.candidate_id == filters.candidate_id]
+        if filters.status is not None:
+            items = [a for a in items if a.status == filters.status]
+
+        items.sort(key=lambda a: (a.created_at, a.id), reverse=True)
+
+        if cursor is not None:
+            decoded = ApplicationCursor.decode(cursor)
+            items = [
+                a
+                for a in items
+                if (a.created_at, a.id) < (decoded.created_at, decoded.application_id)
+            ]
+
+        page = items[:limit]
+        has_more = len(items) > limit
+
+        next_cursor = None
+        if has_more and page:
+            last = page[-1]
+            next_cursor = ApplicationCursor(
+                created_at=last.created_at, application_id=last.id
+            ).encode()
+
+        return CursorPage(items=page, next_cursor=next_cursor, has_more=has_more)
 
 
 class FakeSharedUseCases:

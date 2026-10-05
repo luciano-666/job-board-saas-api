@@ -242,6 +242,8 @@ class Settings(BaseSettings):
             {"endpoint": "/api/v1/user/me", "method": "PATCH"},
             {"endpoint": "/api/v1/user/me/", "method": "DELETE"},
             {"endpoint": "/api/v1/user/me", "method": "DELETE"},
+            {"endpoint": "/api/v1/applications/me/", "method": "GET"},
+            {"endpoint": "/api/v1/applications/me", "method": "GET"},
         ]
 
     @computed_field
@@ -276,6 +278,8 @@ class Settings(BaseSettings):
             {"endpoint": "/api/v1/user/{user_id}/suspend", "method": "PATCH"},
             {"endpoint": "/api/v1/user/{user_id}/activate/", "method": "PATCH"},
             {"endpoint": "/api/v1/user/{user_id}/activate", "method": "PATCH"},
+            {"endpoint": "/api/v1/applications/jobs/{job_id}/", "method": "GET"},
+            {"endpoint": "/api/v1/applications/jobs/{job_id}", "method": "GET"},
         ]
 
     @computed_field
